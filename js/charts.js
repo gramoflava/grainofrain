@@ -9,15 +9,16 @@ export function initCharts() {
 
 export function renderAll(ch, series, color = '#1E88E5', prefs = {showGrid:true}) {
   const x = series.x;
+  const tempRange = series.tempMax.map((max, i) => max - series.tempMin[i]);
   const grid = { left: 40, right: 10, top: 10, bottom: 20 };
   const common = { animation:false, xAxis:{type:'category', data:x, boundaryGap:false}, yAxis:{type:'value'}, grid, tooltip:{trigger:'axis'} };
   ch.temp.setOption({
     ...common,
     yAxis:{type:'value', name:'°C'},
     series:[
-      {name:'Mean', type:'line', data:series.tempMean, lineStyle:{color, width:2}},
-      {name:'Min', type:'line', data:series.tempMin, lineStyle:{opacity:0}, stack:'temp', areaStyle:{color, opacity:0.2}},
-      {name:'Max', type:'line', data:series.tempMax, lineStyle:{opacity:0}, stack:'temp', areaStyle:{color, opacity:0.2}}
+      {name:'Min', type:'line', data:series.tempMin, stack:'temp', lineStyle:{opacity:0}},
+      {name:'Range', type:'line', data:tempRange, stack:'temp', lineStyle:{opacity:0}, areaStyle:{color, opacity:0.2}},
+      {name:'Mean', type:'line', data:series.tempMean, lineStyle:{color, width:2}}
     ]
   });
   if (series.norm) {
