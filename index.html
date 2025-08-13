@@ -1,238 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weather Comparator</title>
-  <!-- Tailwind CSS for quick, responsive layout -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
-  <!-- Chart.js for visualizations -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  </head>
-  <body class="bg-gray-50 text-gray-900 min-h-screen">
-    <div class="container mx-auto p-6">
-      <h1 class="text-3xl font-bold mb-6 text-center">Weather Comparator</h1>
-
-      <!-- Input panel -->
-      <div class="grid md:grid-cols-2 gap-6 mb-8">
-        <!-- Pair A -->
-        <div class="p-4 bg-white rounded-2xl shadow-sm">
-          <h2 class="text-xl font-semibold mb-2">Пара A</h2>
-          <label class="block mb-1 text-sm font-medium" for="cityA">Город</label>
-          <input
-            id="cityA"
-            type="text"
-            placeholder="Минск"
-            class="w-full p-2 border rounded-lg mb-3"
-          />
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block mb-1 text-sm font-medium" for="startA">С даты</label>
-              <input id="startA" type="date" class="w-full p-2 border rounded-lg" />
-            </div>
-            <div>
-              <label class="block mb-1 text-sm font-medium" for="endA">По дату</label>
-              <input id="endA" type="date" class="w-full p-2 border rounded-lg" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Pair B -->
-        <div class="p-4 bg-white rounded-2xl shadow-sm">
-          <h2 class="text-xl font-semibold mb-2">Пара B</h2>
-          <label class="block mb-1 text-sm font-medium" for="cityB">Город</label>
-          <input
-            id="cityB"
-            type="text"
-            placeholder="Вильнюс"
-            class="w-full p-2 border rounded-lg mb-3"
-          />
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block mb-1 text-sm font-medium" for="startB">С даты</label>
-              <input id="startB" type="date" class="w-full p-2 border rounded-lg" />
-            </div>
-            <div>
-              <label class="block mb-1 text-sm font-medium" for="endB">По дату</label>
-              <input id="endB" type="date" class="w-full p-2 border rounded-lg" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <button
-        id="compareBtn"
-        class="block mx-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-xl shadow-md transition"
-      >
-        Сравнить
-      </button>
-
-      <!-- Charts -->
-      <div class="mt-10 space-y-10">
-        <canvas id="tempChart"></canvas>
-        <canvas id="precChart"></canvas>
-      </div>
-
-      <!-- Summary metrics -->
-      <div id="summary" class="mt-10 grid md:grid-cols-2 gap-6"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grain of Rain</title>
+  <style>
+    body,html{margin:0;padding:0;height:100%;font-family:sans-serif;}
+    #container{display:flex;height:100vh;}
+    #charts{flex:7;display:flex;flex-direction:column;}
+    .chart{flex:1;}
+    #sidebar{flex:3;display:flex;flex-direction:column;}
+    #controls{padding:10px;}
+    #stats{flex:1;overflow:auto;padding:10px;}
+    table{width:100%;border-collapse:collapse;}
+    th{text-align:left;}
+    td,th{padding:2px 4px;}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script type="module" src="./js/ui.js"></script>
+</head>
+<body>
+<div id="container">
+  <div id="charts">
+    <div id="chart-temp" class="chart"></div>
+    <div id="chart-precip" class="chart"></div>
+    <div id="chart-humidity" class="chart"></div>
+    <div id="chart-wind" class="chart"></div>
+  </div>
+  <div id="sidebar">
+    <div id="controls">
+      <div><input id="city" placeholder="City" /></div>
+      <div><input id="start" type="date" /> <input id="end" type="date" /></div>
+      <button id="apply">Apply</button>
+      <button id="export">Export PNG</button>
     </div>
-
-    <script>
-      // Declare chart instances only once globally
-      let tempChart;
-      let precChart;
-
-      async function fetchWeather(city, start, end) {
-        if (!city || !start || !end) {
-          throw new Error("Не заполнены все поля для " + city);
-        }
-
-        const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-          city
-        )}&count=1&language=ru&format=json`;
-        const geoRes = await fetch(geoUrl);
-        const geoJson = await geoRes.json();
-        if (!geoJson.results || !geoJson.results.length) {
-          throw new Error("Город не найден: " + city);
-        }
-        const { latitude, longitude, name, country } = geoJson.results[0];
-
-        const weatherUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${start}&end_date=${end}&daily=temperature_2m_min,temperature_2m_mean,temperature_2m_max,precipitation_sum&timezone=UTC`;
-        const wxRes = await fetch(weatherUrl);
-        const wxJson = await wxRes.json();
-        if (!wxJson || !wxJson.daily) {
-          throw new Error("Нет данных погоды для " + city);
-        }
-
-        const dates = wxJson.daily.time;
-        const min = wxJson.daily.temperature_2m_min;
-        const mean = wxJson.daily.temperature_2m_mean;
-        const max = wxJson.daily.temperature_2m_max;
-        const prec = wxJson.daily.precipitation_sum;
-
-        const minTemp = Math.min(...min);
-        const maxTemp = Math.max(...max);
-        const avgTemp = mean.reduce((acc, v) => acc + v, 0) / (mean.length || 1);
-        const totalPrec = prec.reduce((acc, v) => acc + v, 0);
-
-        return {
-          label: `${name.trim()}, ${country} (${start} – ${end})`,
-          dates,
-          min,
-          mean,
-          max,
-          prec,
-          summary: { minTemp, maxTemp, avgTemp, totalPrec },
-        };
-      }
-
-      function destroyIfExists(chart) {
-        if (chart) {
-          chart.destroy();
-        }
-      }
-
-      function buildCharts(dataA, dataB) {
-        destroyIfExists(tempChart);
-        destroyIfExists(precChart);
-
-        const labels = dataA.dates.length >= dataB.dates.length ? dataA.dates : dataB.dates;
-
-        const ctxTemp = document.getElementById("tempChart").getContext("2d");
-        tempChart = new Chart(ctxTemp, {
-          type: "line",
-          data: {
-            labels,
-            datasets: [
-              { label: "Avg Temp — " + dataA.label, data: dataA.mean, yAxisID: "y", borderWidth: 2, tension: 0.3 },
-              { label: "Avg Temp — " + dataB.label, data: dataB.mean, yAxisID: "y", borderWidth: 2, tension: 0.3 },
-              { label: "Min Temp — " + dataA.label, data: dataA.min, yAxisID: "y", borderWidth: 1, borderDash: [4, 2], tension: 0.3 },
-              { label: "Max Temp — " + dataA.label, data: dataA.max, yAxisID: "y", borderWidth: 1, borderDash: [4, 2], tension: 0.3 },
-              { label: "Min Temp — " + dataB.label, data: dataB.min, yAxisID: "y", borderWidth: 1, borderDash: [4, 2], tension: 0.3 },
-              { label: "Max Temp — " + dataB.label, data: dataB.max, yAxisID: "y", borderWidth: 1, borderDash: [4, 2], tension: 0.3 },
-            ],
-          },
-          options: {
-            interaction: { intersect: false, mode: "index" },
-            scales: {
-              y: { title: { display: true, text: "Температура (°C)" } },
-            },
-          },
-        });
-
-        const ctxPrec = document.getElementById("precChart").getContext("2d");
-        precChart = new Chart(ctxPrec, {
-          type: "bar",
-          data: {
-            labels,
-            datasets: [
-              { label: "Осадки — " + dataA.label, data: dataA.prec, yAxisID: "y1" },
-              { label: "Осадки — " + dataB.label, data: dataB.prec, yAxisID: "y1" },
-            ],
-          },
-          options: {
-            interaction: { intersect: false, mode: "index" },
-            scales: {
-              y1: { beginAtZero: true, title: { display: true, text: "Осадки (мм)" } },
-            },
-          },
-        });
-      }
-
-      function updateSummary(dataA, dataB) {
-        const summaryEl = document.getElementById("summary");
-        summaryEl.innerHTML = "";
-
-        [
-          { label: dataA.label, sum: dataA.summary },
-          { label: dataB.label, sum: dataB.summary },
-        ].forEach((item) => {
-          const card = document.createElement("div");
-          card.className = "p-4 bg-white rounded-2xl shadow-sm";
-          card.innerHTML = `
-            <h3 class="font-semibold mb-2 text-lg">${item.label}</h3>
-            <ul class="space-y-1 text-sm">
-              <li>Мин. темп: <span class="font-mono">${item.sum.minTemp.toFixed(1)} °C</span></li>
-              <li>Макс. темп: <span class="font-mono">${item.sum.maxTemp.toFixed(1)} °C</span></li>
-              <li>Сред. темп: <span class="font-mono">${item.sum.avgTemp.toFixed(1)} °C</span></li>
-              <li>Сумма осадков: <span class="font-mono">${item.sum.totalPrec.toFixed(1)} мм</span></li>
-            </ul>
-          `;
-          summaryEl.appendChild(card);
-        });
-      }
-
-      document.getElementById("compareBtn").addEventListener("click", async () => {
-        const cityA = document.getElementById("cityA").value.trim();
-        const startA = document.getElementById("startA").value;
-        const endA = document.getElementById("endA").value;
-        const cityB = document.getElementById("cityB").value.trim();
-        const startB = document.getElementById("startB").value;
-        const endB = document.getElementById("endB").value;
-
-        if (!cityA || !startA || !endA || !cityB || !startB || !endB) {
-          alert("Пожалуйста, заполните все поля для обеих пар.");
-          return;
-        }
-
-        try {
-          const [dataA, dataB] = await Promise.all([
-            fetchWeather(cityA, startA, endA),
-            fetchWeather(cityB, startB, endB),
-          ]);
-
-          buildCharts(dataA, dataB);
-          updateSummary(dataA, dataB);
-        } catch (err) {
-          console.error(err);
-          alert(err.message || "Ошибка получения данных");
-        }
-      });
-    </script>
-  </body>
+    <div id="stats"></div>
+  </div>
+</div>
+</body>
 </html>
