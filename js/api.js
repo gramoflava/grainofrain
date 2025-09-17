@@ -7,7 +7,16 @@ export async function searchCity(name) {
   const json = await res.json();
   const r = json.results && json.results[0];
   if (!r) throw new Error('City not found');
-  return { name: r.name, lat: r.latitude, lon: r.longitude, country: r.country };
+  return mapGeoResult(r);
+}
+
+export async function suggestCities(name, limit = 8) {
+  if (!name) return [];
+  const url = `${GEO_URL}?name=${encodeURIComponent(name)}&count=${limit}&language=en`;
+  const res = await fetch(url);
+  const json = await res.json();
+  const results = Array.isArray(json.results) ? json.results : [];
+  return results.map(mapGeoResult);
 }
 
 export async function fetchDaily(lat, lon, start, end) {
@@ -82,4 +91,15 @@ export async function fetchNormals(lat, lon) {
   vals.splice(59,0,vals[58]);
   doy.splice(59,0,60);
   return { doy, tmeanNorm: vals };
+}
+
+function mapGeoResult(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    country: r.country,
+    admin1: r.admin1,
+    lat: r.latitude,
+    lon: r.longitude
+  };
 }

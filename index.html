@@ -30,9 +30,16 @@
   </div>
   <div id="sidebar">
     <div id="controls">
-      <div><input id="city" placeholder="City" /></div>
-      <div><input id="start" type="date" /> <input id="end" type="date" /></div>
+      <div>
+        <input id="city" placeholder="Search city" list="city-options" autocomplete="off" />
+        <datalist id="city-options"></datalist>
+      </div>
+      <div>
+        <input id="start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\\d{4}-\\d{2}-\\d{2}" maxlength="10" />
+        <input id="end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\\d{4}-\\d{2}-\\d{2}" maxlength="10" />
+      </div>
       <button id="apply">Apply</button>
+      <button id="reset" type="button">Reset</button>
       <button id="export">Export PNG</button>
     </div>
     <div id="stats"></div>

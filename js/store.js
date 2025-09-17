@@ -1,19 +1,20 @@
 export function defaultState() {
   const today = new Date().toISOString().slice(0,10);
-  const yearEnd = today.slice(0,4) + '-12-31';
+  const jan1 = today.slice(0,4) + '-01-01';
   return {
     mode: 'overview',
     entities: [],
     periods: [],
-    date: { start: today, end: yearEnd },
-    prefs: { showNormals: true, showAllBands: false, showGrid: true }
+    date: { start: jan1, end: today, endIsToday: true },
+    prefs: { showNormals: true, showAllBands: false, showGrid: true },
+    lastCityLabel: ''
   };
 }
 
 export function loadState() {
   try {
     const raw = localStorage.getItem('gor:v1');
-    if (raw) return JSON.parse(raw);
+    if (raw) return normalizeState(JSON.parse(raw));
   } catch (e) {
     console.warn('Failed to load state', e);
   }
@@ -26,4 +27,22 @@ export function saveState(state) {
   } catch (e) {
     console.warn('Failed to save state', e);
   }
+}
+
+function normalizeState(state) {
+  const base = defaultState();
+  const incomingDate = state && state.date ? state.date : {};
+  const normalizedDate = {
+    ...base.date,
+    ...incomingDate,
+    endIsToday: incomingDate && typeof incomingDate.endIsToday === 'boolean' ? incomingDate.endIsToday : base.date.endIsToday
+  };
+  return {
+    ...base,
+    ...state,
+    date: normalizedDate,
+    prefs: { ...base.prefs, ...(state && state.prefs ? state.prefs : {}) },
+    entities: Array.isArray(state?.entities) ? state.entities : base.entities,
+    lastCityLabel: typeof state?.lastCityLabel === 'string' ? state.lastCityLabel : base.lastCityLabel
+  };
 }
