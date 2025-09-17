@@ -7,6 +7,7 @@ export function buildSeries(daily, humidity, wind, normals) {
     precip: daily.precip,
     humidity: humidity,
     wind: wind,
+    windMax: daily.windMax,
     norm: normals ? normals.tmeanNorm.slice(0, daily.date.length) : null
   };
 }
@@ -20,7 +21,8 @@ export function computeStats(series) {
   const precipMax = Math.max(...series.precip);
   const humAvg = avg(series.humidity);
   const windAvg = avg(series.wind);
-  const windMax = Math.max(...series.wind);
+  const windCandidates = series.windMax && series.windMax.length ? series.windMax : series.wind;
+  const windMax = Math.max(...windCandidates);
   let climateDev = null;
   if (series.norm) {
     climateDev = avgT - avg(series.norm);

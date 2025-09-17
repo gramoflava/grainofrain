@@ -7,8 +7,10 @@
   <style>
     body,html{margin:0;padding:0;height:100%;font-family:sans-serif;}
     #container{display:flex;height:100vh;}
-    #charts{flex:7;display:flex;flex-direction:column;}
+    #charts{flex:7;display:flex;flex-direction:column;gap:8px;}
     .chart{flex:1;}
+    #chart-temp{flex:2;}
+    #chart-hydro{flex:1;}
     #sidebar{flex:3;display:flex;flex-direction:column;}
     #controls{padding:10px;}
     #stats{flex:1;overflow:auto;padding:10px;}
@@ -24,9 +26,7 @@
 <div id="container">
   <div id="charts">
     <div id="chart-temp" class="chart"></div>
-    <div id="chart-precip" class="chart"></div>
-    <div id="chart-humidity" class="chart"></div>
-    <div id="chart-wind" class="chart"></div>
+    <div id="chart-hydro" class="chart"></div>
   </div>
   <div id="sidebar">
     <div id="controls">
