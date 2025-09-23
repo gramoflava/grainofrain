@@ -88,7 +88,13 @@ async function apply() {
 }
 
 export function bindControls() {
-  document.getElementById('apply').addEventListener('click', apply);
+  const controlsForm = document.getElementById('controls');
+  if (controlsForm) {
+    controlsForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      apply();
+    });
+  }
   document.getElementById('export').addEventListener('click', () => exportPng('charts'));
   document.getElementById('reset').addEventListener('click', resetAll);
 }

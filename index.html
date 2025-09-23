@@ -4,46 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Grain of Rain</title>
-  <style>
-    body,html{margin:0;padding:0;height:100%;font-family:sans-serif;}
-    #container{display:flex;height:100vh;}
-    #charts{flex:7;display:flex;flex-direction:column;gap:8px;}
-    .chart{flex:1;}
-    #chart-temp{flex:2;}
-    #chart-hydro{flex:1;}
-    #sidebar{flex:3;display:flex;flex-direction:column;}
-    #controls{padding:10px;}
-    #stats{flex:1;overflow:auto;padding:10px;}
-    table{width:100%;border-collapse:collapse;}
-    th{text-align:left;}
-    td,th{padding:2px 4px;}
-  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script type="module" src="./js/ui.js"></script>
 </head>
 <body>
-<div id="container">
-  <div id="charts">
-    <div id="chart-temp" class="chart"></div>
-    <div id="chart-hydro" class="chart"></div>
-  </div>
-  <div id="sidebar">
-    <div id="controls">
-      <div>
-        <input id="city" placeholder="Search city" list="city-options" autocomplete="off" />
-        <datalist id="city-options"></datalist>
-      </div>
-      <div>
-        <input id="start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\\d{4}-\\d{2}-\\d{2}" maxlength="10" />
-        <input id="end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\\d{4}-\\d{2}-\\d{2}" maxlength="10" />
-      </div>
-      <button id="apply">Apply</button>
-      <button id="reset" type="button">Reset</button>
-      <button id="export">Export PNG</button>
+  <header class="container">
+    <h1>Grain of Rain</h1>
+    <p>Weather insights with automatic light and dark themes.</p>
+  </header>
+  <main class="container-fluid">
+    <div id="workspace">
+      <section id="charts" aria-label="Forecast charts">
+        <div id="chart-temp" class="chart" role="img" aria-label="Temperature chart"></div>
+        <div id="chart-hydro" class="chart" role="img" aria-label="Hydrology chart"></div>
+      </section>
+      <aside id="sidebar">
+        <form id="controls">
+          <label for="city">City</label>
+          <input id="city" placeholder="Search city" list="city-options" autocomplete="off" />
+          <datalist id="city-options"></datalist>
+
+          <div class="grid" role="group" aria-labelledby="date-range-label">
+            <span id="date-range-label" class="label">Date range</span>
+            <label for="start" class="sr-only">Start date</label>
+            <input id="start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
+            <label for="end" class="sr-only">End date</label>
+            <input id="end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
+          </div>
+
+          <div class="button-row">
+            <button id="apply" type="submit">Apply</button>
+            <button id="reset" type="button" class="secondary">Reset</button>
+            <button id="export" type="button" class="secondary">Export PNG</button>
+          </div>
+        </form>
+        <section id="stats" aria-live="polite"></section>
+      </aside>
     </div>
-    <div id="stats"></div>
-  </div>
-</div>
+  </main>
 </body>
 </html>

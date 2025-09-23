@@ -1,0 +1,148 @@
+:root {
+  --layout-gap: calc(var(--pico-spacing) * 1.25);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header.container {
+  padding-top: calc(var(--pico-spacing) * 0.75);
+  padding-bottom: calc(var(--pico-spacing) * 0.5);
+}
+
+main.container-fluid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  padding-bottom: calc(var(--pico-spacing) * 0.5);
+  min-height: 0;
+}
+
+#workspace {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-gap);
+  min-height: 0;
+}
+
+#charts {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-gap);
+  min-height: 0;
+}
+
+#charts > .chart {
+  flex: 1;
+  min-height: min(220px, 38vh);
+  width: 100%;
+  border-radius: var(--pico-border-radius);
+  background-color: var(--pico-color-muted-background);
+  overflow: hidden;
+}
+
+#chart-temp {
+  flex: 2;
+  min-height: min(280px, 50vh);
+}
+
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-gap);
+  min-height: 0;
+  height: 100%;
+}
+
+#controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pico-spacing);
+}
+
+#controls .grid {
+  align-items: center;
+  gap: calc(var(--pico-spacing) / 2);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--pico-spacing) / 2);
+}
+
+#controls .label {
+  display: block;
+  font-weight: 600;
+  grid-column: 1 / -1;
+}
+
+#stats {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--pico-spacing);
+  border-radius: var(--pico-border-radius);
+  background-color: var(--pico-color-muted-background);
+}
+
+#stats table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#stats th {
+  text-align: left;
+}
+
+#stats td,
+#stats th {
+  padding: 0.35rem 0.5rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 960px) {
+  #workspace {
+    flex-direction: row;
+    align-items: stretch;
+    gap: calc(var(--layout-gap) * 1.25);
+  }
+
+  #charts {
+    flex: 2;
+    min-height: 0;
+  }
+
+  #charts > .chart {
+    min-height: min(200px, 32vh);
+  }
+
+  #sidebar {
+    flex: 1;
+    max-width: 420px;
+  }
+}
