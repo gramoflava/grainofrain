@@ -10,8 +10,8 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
   const tempRange = series.tempMax.map((max, i) => (isFiniteNumber(max) && isFiniteNumber(series.tempMin[i]) ? max - series.tempMin[i] : null));
   const windSeries = (series.windMax && series.windMax.length) ? series.windMax : series.wind;
   const windAxisMax = 200;
-  const gridTop = { left: 36, right: 32, top: 20, bottom: 32, containLabel: true };
-  const gridBottom = { left: 36, right: 32, top: 24, bottom: 36, containLabel: true };
+  const gridTop = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
+  const gridBottom = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
 
   const baseXAxis = {
     type: 'category',

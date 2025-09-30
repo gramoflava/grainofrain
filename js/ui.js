@@ -76,7 +76,7 @@ async function apply() {
     const series = buildSeries(daily, hum, wind, normals);
     renderAll(charts, series, '#1E88E5', state.prefs);
     const stats = computeStats(series);
-    fillStats(statsDom, stats);
+    fillStats(statsDom, stats, label, startIso, endIso);
 
     state.entities = [{
       type: 'city',
@@ -107,10 +107,11 @@ export function bindControls() {
   if (downloadBtn) {
     downloadBtn.addEventListener('click', async () => {
       try {
-        await exportPng('charts', buildFilename());
+        await exportPng('workspace', buildFilename());
+        showMessage('✓ Chart downloaded', 'success');
       } catch (err) {
         console.error(err);
-        alert('Download failed');
+        showMessage('Download failed: ' + (err.message || 'Unknown error'), 'error');
       }
     });
   }
@@ -119,11 +120,11 @@ export function bindControls() {
   if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
       try {
-        await copyPngToClipboard('charts');
-        alert('Charts copied to clipboard');
+        await copyPngToClipboard('workspace');
+        showMessage('✓ Charts copied to clipboard', 'success');
       } catch (err) {
         console.error(err);
-        alert(err.message || 'Copy not supported');
+        handleClipboardError(err);
       }
     });
   }
@@ -131,8 +132,13 @@ export function bindControls() {
   document.getElementById('reset').addEventListener('click', resetAll);
 }
 
-export function fillStats(dom, stats) {
-  dom.innerHTML = `<table>
+export function fillStats(dom, stats, city = '', startDate = '', endDate = '') {
+  dom.innerHTML = `
+  <div class="stats-header">
+    <div class="stats-city">${escapeHtml(city || 'Location')}</div>
+    <div class="stats-dates">${startDate} → ${endDate}</div>
+  </div>
+  <table>
   <tr><th>Min temp</th><td>${formatTemp(stats.minT)}</td></tr>
   <tr><th>Max temp</th><td>${formatTemp(stats.maxT)}</td></tr>
   <tr><th>Avg temp</th><td>${formatTemp(stats.avgT)}</td></tr>
@@ -414,4 +420,76 @@ function autoApplyOnLoad() {
       apply();
     }, 100);
   }
+}
+
+function detectPlatform() {
+  const ua = navigator.userAgent.toLowerCase();
+  const isMac = /mac|iphone|ipad|ipod/.test(ua);
+  const isWindows = /win/.test(ua);
+  const isSafari = /safari/.test(ua) && !/chrome/.test(ua);
+  const isChrome = /chrome/.test(ua) && !/edge/.test(ua);
+  const isFirefox = /firefox/.test(ua);
+
+  return { isMac, isWindows, isSafari, isChrome, isFirefox };
+}
+
+function handleClipboardError(err) {
+  const platform = detectPlatform();
+  let message = 'Unable to copy to clipboard.\n\n';
+
+  if (platform.isSafari) {
+    message += '**Safari Limitation**\n\n';
+    message += 'Safari doesn\'t support clipboard image copying.\n\n';
+    message += '• Use the 💾 Download button instead\n';
+    message += '• Or switch to Chrome/Firefox for clipboard support';
+  } else if (!navigator.clipboard) {
+    message += 'Your browser doesn\'t support clipboard API.\n\n';
+    message += '• Use the 💾 Download button instead\n';
+    message += '• Or access via HTTPS (required for clipboard)';
+  } else if (err.message && err.message.includes('denied')) {
+    if (platform.isMac) {
+      message += '**Permission denied**\n\n';
+      message += 'macOS: System Settings → Privacy & Security → Screen Recording\n';
+      message += 'Enable your browser for clipboard access.\n\n';
+      message += 'Alternative: Use the 💾 Download button';
+    } else if (platform.isWindows) {
+      message += '**Permission denied**\n\n';
+      message += 'Windows: Settings → Privacy → Clipboard\n';
+      message += 'Allow apps to access clipboard.\n\n';
+      message += 'Alternative: Use the 💾 Download button';
+    } else {
+      message += 'Clipboard permission was denied.\n\n';
+      message += 'Alternative: Use the 💾 Download button';
+    }
+  } else {
+    message += err.message || 'Unknown error\n\n';
+    message += 'Alternative: Use the 💾 Download button';
+  }
+
+  showMessage(message, 'error');
+}
+
+function showMessage(text, type = 'info') {
+  const existing = document.getElementById('toast-message');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'toast-message';
+  toast.className = `toast toast-${type}`;
+  toast.textContent = text;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => toast.classList.add('visible'), 10);
+
+  const duration = type === 'error' ? 8000 : 2500;
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+
+  toast.addEventListener('click', () => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  });
 }
