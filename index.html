@@ -14,20 +14,43 @@
   <main class="container-fluid">
     <header id="config-bar">
       <form id="controls" aria-label="Data configuration">
-        <div class="city-autocomplete">
-          <label for="city" class="sr-only">City</label>
-          <input id="city" placeholder="City" autocomplete="off" aria-autocomplete="list" aria-expanded="false" />
-          <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
+        <div class="controls-row">
+          <input id="start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
+          <input id="end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
+
+          <button id="apply" type="submit" class="primary">Apply</button>
+          <div class="spacer"></div>
+          <button id="copy" type="button" title="Copy charts">📋</button>
+          <button id="download" type="button" title="Download charts">💾</button>
+          <button id="reset" type="button" title="Reset app" class="danger">♻️</button>
         </div>
 
-        <input id="start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
-        <input id="end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
-
-        <button id="apply" type="submit" class="primary">Apply</button>
-        <div class="spacer"></div>
-        <button id="copy" type="button" title="Copy charts">📋</button>
-        <button id="download" type="button" title="Download charts">💾</button>
-        <button id="reset" type="button" title="Reset app" class="danger">♻️</button>
+        <div id="city-inputs">
+          <div class="city-row" data-city-index="0">
+            <div class="city-autocomplete">
+              <label for="city-0" class="sr-only">City 1</label>
+              <input id="city-0" class="city-input" placeholder="City" autocomplete="off" aria-autocomplete="list" aria-expanded="false" />
+              <div id="city-dropdown-0" class="city-dropdown" role="listbox"></div>
+            </div>
+            <button type="button" class="city-action-btn add-btn" id="add-city-btn" title="Add city">+</button>
+          </div>
+          <div class="city-row" data-city-index="1" style="display: none;">
+            <div class="city-autocomplete">
+              <label for="city-1" class="sr-only">City 2</label>
+              <input id="city-1" class="city-input" placeholder="City 2" autocomplete="off" aria-autocomplete="list" aria-expanded="false" />
+              <div id="city-dropdown-1" class="city-dropdown" role="listbox"></div>
+            </div>
+            <button type="button" class="city-action-btn remove-btn" data-remove-index="1" title="Remove city">−</button>
+          </div>
+          <div class="city-row" data-city-index="2" style="display: none;">
+            <div class="city-autocomplete">
+              <label for="city-2" class="sr-only">City 3</label>
+              <input id="city-2" class="city-input" placeholder="City 3" autocomplete="off" aria-autocomplete="list" aria-expanded="false" />
+              <div id="city-dropdown-2" class="city-dropdown" role="listbox"></div>
+            </div>
+            <button type="button" class="city-action-btn remove-btn" data-remove-index="2" title="Remove city">−</button>
+          </div>
+        </div>
       </form>
     </header>
 

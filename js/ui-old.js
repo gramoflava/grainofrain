@@ -1,53 +1,48 @@
 import { loadState, saveState, defaultState } from './store.js';
 import { searchCity, fetchDaily, fetchHourly, dailyMeanFromHourly, fetchNormals, suggestCities } from './api.js';
 import { buildSeries, computeStats } from './transform.js';
-import { initCharts, renderAll, renderCompare } from './charts.js';
+import { initCharts, renderAll } from './charts.js';
 import { exportPng, copyPngToClipboard } from './export.js';
-
-const COLORS = ['#1E88E5', '#E53935', '#43A047'];
-const COLOR_NAMES = ['blue', 'red', 'green'];
 
 let state = loadState();
 const charts = initCharts();
-const cityCaches = [new Map(), new Map(), new Map()];
+const cityCache = new Map();
 
+const cityInput = document.getElementById('city');
 const startInput = document.getElementById('start');
 const endInput = document.getElementById('end');
+const cityDropdown = document.getElementById('city-dropdown');
 const statsDom = document.getElementById('stats');
-const addCityBtn = document.getElementById('add-city-btn');
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 prefillInputs();
 bindControls();
-setupCityButtons();
-setupCityAutocomplete(0);
-setupCityAutocomplete(1);
-setupCityAutocomplete(2);
+setupCityAutocomplete();
 setupPersistenceListeners();
 autoApplyOnLoad();
 
 async function apply() {
+  const cityValue = cityInput.value.trim();
   const startValue = startInput.value.trim();
   const endValue = endInput.value.trim();
-
-  if (!startValue || !endValue) return showMessage('Fill all fields', 'error');
+  if (!cityValue || !startValue || !endValue) return alert('Fill all fields');
 
   const startIso = sanitizeDate(startValue);
   if (!startIso) {
-    showMessage('Start date must use YYYY-MM-DD', 'error');
+    alert('Start date must use YYYY-MM-DD');
     startInput.focus();
     return;
   }
   const endIso = sanitizeDate(endValue);
   if (!endIso) {
-    showMessage('End date must use YYYY-MM-DD', 'error');
+    alert('End date must use YYYY-MM-DD');
     endInput.focus();
     return;
   }
 
   if (startIso > endIso) {
-    showMessage('Start date must be before end date', 'error');
+    alert('Start date must be before end date');
     startInput.focus();
     return;
   }
@@ -59,126 +54,44 @@ async function apply() {
   endInput.value = endIsToday ? today : endIso;
 
   try {
-    const visibleCities = getVisibleCityCount();
-
-    const entities = [];
-    const allSeries = [];
-    const allStats = [];
-
-    for (let i = 0; i < visibleCities; i++) {
-      const cityInput = document.getElementById(`city-${i}`);
-      const cityValue = cityInput.value.trim();
-
-      if (!cityValue) {
-        if (i === 0) {
-          return showMessage('At least first city is required', 'error');
-        }
-        continue;
-      }
-
-      let geo = cityCaches[i].get(cityValue) || null;
-      if (!geo) {
-        geo = await searchCity(cityValue);
-      }
-      const label = formatCityLabel(geo);
-      cityCaches[i].set(label, geo);
-      cityCaches[i].set(geo.name, geo);
-      cityCaches[i].set(cityValue, geo);
-      cityInput.value = label;
-
-      const daily = await fetchDaily(geo.lat, geo.lon, startIso, endIso);
-      const hourly = await fetchHourly(geo.lat, geo.lon, startIso, endIso);
-      const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
-      const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
-
-      let normals = null;
-      if (state.prefs.showNormals) {
-        try { normals = await fetchNormals(geo.lat, geo.lon); } catch (e) { normals = null; }
-      }
-
-      const series = buildSeries(daily, hum, wind, normals);
-      const stats = computeStats(series);
-
-      entities.push({
-        type: 'city',
-        name: geo.name,
-        country: geo.country || null,
-        admin1: geo.admin1 || null,
-        lat: geo.lat,
-        lon: geo.lon,
-        label
-      });
-      allSeries.push(series);
-      allStats.push(stats);
+    let geo = cityCache.get(cityValue) || null;
+    if (!geo) {
+      geo = await searchCity(cityValue);
     }
+    const label = formatCityLabel(geo);
+    cityCache.set(label, geo);
+    cityCache.set(geo.name, geo);
+    cityCache.set(cityValue, geo);
+    cityInput.value = label;
+    state.lastCityLabel = label;
 
-    if (entities.length === 1) {
-      renderAll(charts, allSeries[0], COLORS[0], state.prefs);
-      fillStats(statsDom, [allStats[0]], [entities[0].label], startIso, endIso);
-    } else {
-      renderCompare(charts, allSeries, COLORS, state.prefs);
-      const labels = entities.map(e => e.label);
-      fillStats(statsDom, allStats, labels, startIso, endIso);
+    const daily = await fetchDaily(geo.lat, geo.lon, startIso, endIso);
+    const hourly = await fetchHourly(geo.lat, geo.lon, startIso, endIso);
+    const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
+    const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
+    let normals = null;
+    if (state.prefs.showNormals) {
+      try { normals = await fetchNormals(geo.lat, geo.lon); } catch (e) { normals = null; }
     }
+    const series = buildSeries(daily, hum, wind, normals);
+    renderAll(charts, series, '#1E88E5', state.prefs);
+    const stats = computeStats(series);
+    fillStats(statsDom, stats, label, startIso, endIso);
 
-    state.entities = entities;
+    state.entities = [{
+      type: 'city',
+      name: geo.name,
+      country: geo.country || null,
+      admin1: geo.admin1 || null,
+      lat: geo.lat,
+      lon: geo.lon,
+      label
+    }];
     state.date = { start: startIso, end: endIso, endIsToday };
     saveState(state);
   } catch (e) {
     console.error(e);
-    showMessage(e.message || 'An error occurred', 'error');
-  }
-}
-
-function setupCityButtons() {
-  // Add city button
-  addCityBtn.addEventListener('click', () => {
-    const visibleCount = getVisibleCityCount();
-    if (visibleCount < 3) {
-      document.querySelector(`[data-city-index="${visibleCount}"]`).style.display = '';
-      updateAddButtonState();
-    }
-  });
-
-  // Remove city buttons
-  document.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const index = parseInt(btn.getAttribute('data-remove-index'), 10);
-      const cityRow = document.querySelector(`[data-city-index="${index}"]`);
-      const cityInput = document.getElementById(`city-${index}`);
-
-      // Clear the input and hide the row
-      cityInput.value = '';
-      cityRow.style.display = 'none';
-
-      // If removing city 2, also hide city 3 and shift its value up if needed
-      if (index === 1) {
-        const city3Row = document.querySelector('[data-city-index="2"]');
-        const city3Input = document.getElementById('city-2');
-        city3Input.value = '';
-        city3Row.style.display = 'none';
-      }
-
-      updateAddButtonState();
-    });
-  });
-
-  updateAddButtonState();
-}
-
-function getVisibleCityCount() {
-  let count = 1; // First city always counts
-  if (document.querySelector('[data-city-index="1"]').style.display !== 'none') count++;
-  if (document.querySelector('[data-city-index="2"]').style.display !== 'none') count++;
-  return count;
-}
-
-function updateAddButtonState() {
-  const visibleCount = getVisibleCityCount();
-  if (visibleCount >= 3) {
-    addCityBtn.disabled = true;
-  } else {
-    addCityBtn.disabled = false;
+    alert(e.message);
   }
 }
 
@@ -190,7 +103,6 @@ export function bindControls() {
       apply();
     });
   }
-
   const downloadBtn = document.getElementById('download');
   if (downloadBtn) {
     downloadBtn.addEventListener('click', async () => {
@@ -220,47 +132,24 @@ export function bindControls() {
   document.getElementById('reset').addEventListener('click', resetAll);
 }
 
-export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate = '') {
-  const numCities = statsArray.length;
-  const colSpan = numCities;
-
-  // Location row
-  let headerHtml = `<div class="stats-header-row" style="grid-template-columns: auto repeat(${numCities}, 1fr);"><div class="stats-label">Location</div>`;
-  cityLabels.forEach((label, i) => {
-    const colorClass = `color-${COLOR_NAMES[i]}`;
-    headerHtml += `<div class="stats-value ${colorClass}">${escapeHtml(label || `City ${i+1}`)}</div>`;
-  });
-  headerHtml += '</div>';
-
-  // Period row (merged across all columns)
-  headerHtml += `<div class="stats-header-row" style="grid-template-columns: auto 1fr;"><div class="stats-label">Period</div>`;
-  headerHtml += `<div class="stats-value" style="grid-column: span ${colSpan};">${startDate} → ${endDate}</div>`;
-  headerHtml += '</div>';
-
-  const metrics = [
-    { key: 'minT', label: 'Min temp', format: formatTemp },
-    { key: 'maxT', label: 'Max temp', format: formatTemp },
-    { key: 'avgT', label: 'Avg temp', format: formatTemp },
-    { key: 'climateDev', label: 'Climate dev', format: formatDeviation },
-    { key: 'precipTotal', label: 'Total precip', format: formatPrecip },
-    { key: 'precipMax', label: 'Max daily', format: formatPrecip },
-    { key: 'precipDays', label: 'Days >0.1mm', format: v => v },
-    { key: 'humAvg', label: 'Avg humidity', format: formatPercent },
-    { key: 'windAvg', label: 'Avg wind', format: formatWind },
-    { key: 'windMax', label: 'Max wind', format: formatWind }
-  ];
-
-  let tableHtml = '';
-  metrics.forEach(metric => {
-    tableHtml += `<div class="stats-row" style="grid-template-columns: auto repeat(${numCities}, 1fr);"><div class="stats-label">${metric.label}</div>`;
-    statsArray.forEach((stats, i) => {
-      const colorClass = `color-${COLOR_NAMES[i]}`;
-      tableHtml += `<div class="stats-value ${colorClass}">${metric.format(stats[metric.key])}</div>`;
-    });
-    tableHtml += '</div>';
-  });
-
-  dom.innerHTML = `<div class="stats-header">${headerHtml}</div><div class="stats-table">${tableHtml}</div>`;
+export function fillStats(dom, stats, city = '', startDate = '', endDate = '') {
+  dom.innerHTML = `
+  <div class="stats-header">
+    <div class="stats-city">${escapeHtml(city || 'Location')}</div>
+    <div class="stats-dates">${startDate} → ${endDate}</div>
+  </div>
+  <table>
+  <tr><th>Min temp</th><td>${formatTemp(stats.minT)}</td></tr>
+  <tr><th>Max temp</th><td>${formatTemp(stats.maxT)}</td></tr>
+  <tr><th>Avg temp</th><td>${formatTemp(stats.avgT)}</td></tr>
+  <tr><th>Climate dev</th><td>${formatDeviation(stats.climateDev)}</td></tr>
+  <tr><th>Total precip</th><td>${formatPrecip(stats.precipTotal)}</td></tr>
+  <tr><th>Max daily</th><td>${formatPrecip(stats.precipMax)}</td></tr>
+  <tr><th>Days >0.1mm</th><td>${stats.precipDays}</td></tr>
+  <tr><th>Avg humidity</th><td>${formatPercent(stats.humAvg)}</td></tr>
+  <tr><th>Avg wind</th><td>${formatWind(stats.windAvg)}</td></tr>
+  <tr><th>Max wind</th><td>${formatWind(stats.windMax)}</td></tr>
+  </table>`;
 }
 
 function formatTemp(value) {
@@ -291,58 +180,34 @@ function isFiniteNumber(value) {
 
 function buildFilename() {
   const today = isoToday();
-  const mode = state.mode || 'single';
-  let baseName = 'grainofrain';
-
-  if (mode === 'single' && state.entities.length > 0) {
-    const city = state.entities[0].label;
-    baseName = city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'grainofrain';
-  } else if (mode === 'compare') {
-    baseName = 'compare';
-  }
-
-  return `${baseName}-${today}.png`;
+  const city = state.entities[0]?.label || state.lastCityLabel || 'grainofrain';
+  const safeCity = city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'grainofrain';
+  return `${safeCity}-${today}.png`;
 }
 
 function prefillInputs() {
   const today = isoToday();
   const jan1 = isoYearStart(today);
-
-  // Restore saved cities
-  let filledCityCount = 0;
-  for (let i = 0; i < 3; i++) {
-    const cityInput = document.getElementById(`city-${i}`);
-    const cityRow = document.querySelector(`[data-city-index="${i}"]`);
-    const savedEntity = state.entities[i];
-
-    if (savedEntity && savedEntity.label) {
-      cityInput.value = savedEntity.label;
+  const savedCity = state.lastCityLabel || (state.entities[0] && state.entities[0].label);
+  if (savedCity) {
+    cityInput.value = savedCity;
+    const entity = state.entities[0];
+    if (entity && entity.label === savedCity) {
       const cachedGeo = {
-        name: savedEntity.name,
-        country: savedEntity.country,
-        admin1: savedEntity.admin1,
-        lat: savedEntity.lat,
-        lon: savedEntity.lon,
-        label: savedEntity.label
+        name: entity.name,
+        country: entity.country,
+        admin1: entity.admin1,
+        lat: entity.lat,
+        lon: entity.lon,
+        label: savedCity
       };
-      cityCaches[i].set(savedEntity.label, cachedGeo);
-      cityCaches[i].set(savedEntity.name, cachedGeo);
-
-      // Show this city row
-      if (i > 0) {
-        cityRow.style.display = '';
-      }
-      filledCityCount++;
-    } else {
-      cityInput.value = '';
-      if (i > 0) {
-        cityRow.style.display = 'none';
-      }
+      cityCache.set(savedCity, cachedGeo);
+      cityCache.set(entity.name, cachedGeo);
     }
+  } else {
+    cityInput.value = '';
   }
-
-  // Update add button state based on restored cities
-  updateAddButtonState();
+  state.lastCityLabel = savedCity ? savedCity : '';
 
   const savedDate = state.date || {};
   const start = sanitizeDate(savedDate.start) || jan1;
@@ -357,10 +222,7 @@ function prefillInputs() {
   saveState(state);
 }
 
-function setupCityAutocomplete(index) {
-  const cityInput = document.getElementById(`city-${index}`);
-  const cityDropdown = document.getElementById(`city-dropdown-${index}`);
-
+function setupCityAutocomplete() {
   let timer = null;
   let selectedIndex = -1;
   let currentMatches = [];
@@ -376,8 +238,8 @@ function setupCityAutocomplete(index) {
   function selectCity(city) {
     const label = formatCityLabel(city);
     cityInput.value = label;
-    cityCaches[index].set(label, city);
-    cityCaches[index].set(city.name, city);
+    cityCache.set(label, city);
+    cityCache.set(city.name, city);
     closeDropdown();
     cityInput.blur();
   }
@@ -404,8 +266,8 @@ function setupCityAutocomplete(index) {
 
         cityDropdown.innerHTML = matches.map((city, idx) => {
           const label = formatCityLabel(city);
-          cityCaches[index].set(label, city);
-          cityCaches[index].set(city.name, city);
+          cityCache.set(label, city);
+          cityCache.set(city.name, city);
           const coords = `${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°`;
           return `
             <div class="city-option" role="option" data-index="${idx}" tabindex="-1">
@@ -479,17 +341,15 @@ function escapeHtml(text) {
 }
 
 function setupPersistenceListeners() {
-  for (let i = 0; i < 3; i++) {
-    const cityInput = document.getElementById(`city-${i}`);
-    cityInput.addEventListener('change', () => {
-      const value = cityInput.value.trim();
-      if (!state.entities[i]) {
-        state.entities[i] = {};
-      }
-      state.entities[i].label = value;
-      saveState(state);
-    });
-  }
+  cityInput.addEventListener('change', () => {
+    const value = cityInput.value.trim();
+    state.lastCityLabel = value;
+    const entity = state.entities[0];
+    if (!entity || entity.label !== value) {
+      state.entities = [];
+    }
+    saveState(state);
+  });
 
   startInput.addEventListener('change', () => handleDateChange('start', startInput));
   endInput.addEventListener('change', () => handleDateChange('end', endInput));
@@ -500,7 +360,7 @@ function handleDateChange(field, inputEl) {
   const iso = sanitizeDate(raw);
   const today = isoToday();
   if (!iso) {
-    showMessage('Use YYYY-MM-DD format', 'error');
+    alert('Use YYYY-MM-DD format');
     if (field === 'start') {
       const fallback = state.date?.start || isoYearStart(today);
       inputEl.value = fallback;
@@ -552,7 +412,7 @@ function formatCityLabel(city) {
 }
 
 function autoApplyOnLoad() {
-  const hasCity = document.getElementById('city-0').value.trim().length > 0;
+  const hasCity = cityInput.value.trim().length > 0;
   const hasValidState = state.entities && state.entities.length > 0;
 
   if (hasCity && hasValidState) {

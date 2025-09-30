@@ -2,7 +2,7 @@ export function defaultState() {
   const today = new Date().toISOString().slice(0,10);
   const jan1 = today.slice(0,4) + '-01-01';
   return {
-    mode: 'overview',
+    mode: 'single',
     entities: [],
     periods: [],
     date: { start: jan1, end: today, endIsToday: true },
