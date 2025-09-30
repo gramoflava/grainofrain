@@ -20,27 +20,46 @@ export async function suggestCities(name, limit = 8) {
 }
 
 export async function fetchDaily(lat, lon, start, end) {
-  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${end}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,windspeed_10m_max&timezone=UTC`;
+  const today = new Date().toISOString().slice(0,10);
+  const actualEnd = end > today ? today : end;
+
+  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,windspeed_10m_max&timezone=UTC`;
   const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error('Failed to load daily data');
+  }
   const json = await res.json();
-  return {
-    date: json.daily.time,
-    tmin: json.daily.temperature_2m_min,
-    tmean: json.daily.temperature_2m_mean,
-    tmax: json.daily.temperature_2m_max,
-    precip: json.daily.precipitation_sum,
-    windMax: json.daily.windspeed_10m_max
-  };
+  const daily = json?.daily || {};
+  const dates = enumerateDates(start, end);
+  const map = buildDailyMap(daily);
+  const tmin = [];
+  const tmean = [];
+  const tmax = [];
+  const precip = [];
+  const windMax = [];
+  for (const d of dates) {
+    const entry = map.get(d);
+    tmin.push(entry?.tmin ?? null);
+    tmean.push(entry?.tmean ?? null);
+    tmax.push(entry?.tmax ?? null);
+    precip.push(entry?.precip ?? null);
+    windMax.push(entry?.windMax ?? null);
+  }
+  return { date: dates, tmin, tmean, tmax, precip, windMax };
 }
 
 export async function fetchHourly(lat, lon, start, end) {
-  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${end}&hourly=relative_humidity_2m,windspeed_10m&timezone=UTC`;
+  const today = new Date().toISOString().slice(0,10);
+  const actualEnd = end > today ? today : end;
+
+  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&hourly=relative_humidity_2m,windspeed_10m&timezone=UTC`;
   const res = await fetch(url);
   const json = await res.json();
+  const hourly = json?.hourly || {};
   return {
-    time: json.hourly.time,
-    humidity: json.hourly.relative_humidity_2m,
-    wind: json.hourly.windspeed_10m
+    time: Array.isArray(hourly.time) ? hourly.time : [],
+    humidity: Array.isArray(hourly.relative_humidity_2m) ? hourly.relative_humidity_2m : [],
+    wind: Array.isArray(hourly.windspeed_10m) ? hourly.windspeed_10m : []
   };
 }
 
@@ -113,6 +132,45 @@ function buildDailyNormals(times, temps) {
   fillMissing(dailyCommon);
   fillMissing(dailyLeap);
   return { dailyCommon, dailyLeap };
+}
+
+function buildDailyMap(daily) {
+  const time = Array.isArray(daily.time) ? daily.time : [];
+  const tmin = Array.isArray(daily.temperature_2m_min) ? daily.temperature_2m_min : [];
+  const tmean = Array.isArray(daily.temperature_2m_mean) ? daily.temperature_2m_mean : [];
+  const tmax = Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max : [];
+  const precip = Array.isArray(daily.precipitation_sum) ? daily.precipitation_sum : [];
+  const windMax = Array.isArray(daily.windspeed_10m_max) ? daily.windspeed_10m_max : [];
+  const map = new Map();
+  for (let i = 0; i < time.length; i++) {
+    map.set(time[i], {
+      tmin: toNumberOrNull(tmin[i]),
+      tmean: toNumberOrNull(tmean[i]),
+      tmax: toNumberOrNull(tmax[i]),
+      precip: toNumberOrNull(precip[i]),
+      windMax: toNumberOrNull(windMax[i])
+    });
+  }
+  return map;
+}
+
+function enumerateDates(start, end) {
+  const result = [];
+  const startDate = new Date(`${start}T00:00:00Z`);
+  const endDate = new Date(`${end}T00:00:00Z`);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || startDate > endDate) {
+    return result;
+  }
+  let current = startDate;
+  while (current <= endDate) {
+    result.push(current.toISOString().slice(0, 10));
+    current = new Date(current.getTime() + 86400000);
+  }
+  return result;
+}
+
+function toNumberOrNull(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 const CUM_MONTH_DAYS_COMMON = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];

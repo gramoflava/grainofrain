@@ -2,7 +2,7 @@ import { loadState, saveState, defaultState } from './store.js';
 import { searchCity, fetchDaily, fetchHourly, dailyMeanFromHourly, fetchNormals, suggestCities } from './api.js';
 import { buildSeries, computeStats } from './transform.js';
 import { initCharts, renderAll } from './charts.js';
-import { exportPng } from './export.js';
+import { exportPng, copyPngToClipboard } from './export.js';
 
 let state = loadState();
 const charts = initCharts();
@@ -11,7 +11,7 @@ const cityCache = new Map();
 const cityInput = document.getElementById('city');
 const startInput = document.getElementById('start');
 const endInput = document.getElementById('end');
-const cityOptions = document.getElementById('city-options');
+const cityDropdown = document.getElementById('city-dropdown');
 const statsDom = document.getElementById('stats');
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,6 +39,13 @@ async function apply() {
     endInput.focus();
     return;
   }
+
+  if (startIso > endIso) {
+    alert('Start date must be before end date');
+    startInput.focus();
+    return;
+  }
+
   const today = isoToday();
   const endIsToday = endIso === today;
 
@@ -65,7 +72,7 @@ async function apply() {
     if (state.prefs.showNormals) {
       try { normals = await fetchNormals(geo.lat, geo.lon); } catch (e) { normals = null; }
     }
-    const series = buildSeries(daily, hum.means, wind.means, normals);
+    const series = buildSeries(daily, hum, wind, normals);
     renderAll(charts, series, '#1E88E5', state.prefs);
     const stats = computeStats(series);
     fillStats(statsDom, stats);
@@ -95,23 +102,80 @@ export function bindControls() {
       apply();
     });
   }
-  document.getElementById('export').addEventListener('click', () => exportPng('charts'));
+  const downloadBtn = document.getElementById('download');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', async () => {
+      try {
+        await exportPng('charts', buildFilename());
+      } catch (err) {
+        console.error(err);
+        alert('Download failed');
+      }
+    });
+  }
+
+  const copyBtn = document.getElementById('copy');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await copyPngToClipboard('charts');
+        alert('Charts copied to clipboard');
+      } catch (err) {
+        console.error(err);
+        alert(err.message || 'Copy not supported');
+      }
+    });
+  }
+
   document.getElementById('reset').addEventListener('click', resetAll);
 }
 
 export function fillStats(dom, stats) {
   dom.innerHTML = `<table>
-  <tr><th>Min temp</th><td>${stats.minT.toFixed(1)} °C</td></tr>
-  <tr><th>Max temp</th><td>${stats.maxT.toFixed(1)} °C</td></tr>
-  <tr><th>Avg temp</th><td>${stats.avgT.toFixed(1)} °C</td></tr>
-  <tr><th>Climate dev</th><td>${stats.climateDev!==null?stats.climateDev.toFixed(1)+' °C':'n/a'}</td></tr>
-  <tr><th>Total precip</th><td>${stats.precipTotal.toFixed(1)} mm</td></tr>
-  <tr><th>Max daily precip</th><td>${stats.precipMax.toFixed(1)} mm</td></tr>
-  <tr><th>Days >0.1 mm</th><td>${stats.precipDays}</td></tr>
-  <tr><th>Avg humidity</th><td>${stats.humAvg.toFixed(1)} %</td></tr>
-  <tr><th>Avg wind</th><td>${stats.windAvg.toFixed(1)} km/h</td></tr>
-  <tr><th>Max wind</th><td>${stats.windMax.toFixed(1)} km/h</td></tr>
+  <tr><th>Min temp</th><td>${formatTemp(stats.minT)}</td><td></td></tr>
+  <tr><th>Max temp</th><td>${formatTemp(stats.maxT)}</td><td></td></tr>
+  <tr><th>Avg temp</th><td>${formatTemp(stats.avgT)}</td><td></td></tr>
+  <tr><th>Climate dev</th><td>${formatDeviation(stats.climateDev)}</td><td></td></tr>
+  <tr><th>Total precip</th><td>${formatPrecip(stats.precipTotal)}</td><td></td></tr>
+  <tr><th>Max daily precip</th><td>${formatPrecip(stats.precipMax)}</td><td></td></tr>
+  <tr><th>Days >0.1 mm</th><td>${stats.precipDays}</td><td></td></tr>
+  <tr><th>Avg humidity</th><td>${formatPercent(stats.humAvg)}</td><td></td></tr>
+  <tr><th>Avg wind</th><td>${formatWind(stats.windAvg)}</td><td></td></tr>
+  <tr><th>Max wind</th><td>${formatWind(stats.windMax)}</td><td></td></tr>
   </table>`;
+}
+
+function formatTemp(value) {
+  return isFiniteNumber(value) ? `${value.toFixed(1)} °C` : 'n/a';
+}
+
+function formatPrecip(value) {
+  return isFiniteNumber(value) ? `${value.toFixed(1)} mm` : 'n/a';
+}
+
+function formatPercent(value) {
+  return isFiniteNumber(value) ? `${value.toFixed(1)} %` : 'n/a';
+}
+
+function formatWind(value) {
+  return isFiniteNumber(value) ? `${value.toFixed(1)} km/h` : 'n/a';
+}
+
+function formatDeviation(value) {
+  if (!isFiniteNumber(value)) return 'n/a';
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(1)} °C`;
+}
+
+function isFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function buildFilename() {
+  const today = isoToday();
+  const city = state.entities[0]?.label || state.lastCityLabel || 'grainofrain';
+  const safeCity = city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'grainofrain';
+  return `${safeCity}-${today}.png`;
 }
 
 function prefillInputs() {
@@ -153,31 +217,120 @@ function prefillInputs() {
 
 function setupCityAutocomplete() {
   let timer = null;
+  let selectedIndex = -1;
+  let currentMatches = [];
+
+  function closeDropdown() {
+    cityDropdown.innerHTML = '';
+    cityDropdown.classList.remove('visible');
+    cityInput.setAttribute('aria-expanded', 'false');
+    selectedIndex = -1;
+    currentMatches = [];
+  }
+
+  function selectCity(city) {
+    const label = formatCityLabel(city);
+    cityInput.value = label;
+    cityCache.set(label, city);
+    cityCache.set(city.name, city);
+    closeDropdown();
+    cityInput.blur();
+  }
+
   cityInput.addEventListener('input', () => {
     const query = cityInput.value.trim();
     if (timer) clearTimeout(timer);
     if (!query) {
-      cityOptions.innerHTML = '';
+      closeDropdown();
       return;
     }
     timer = setTimeout(async () => {
       if (query.length < 2) {
-        cityOptions.innerHTML = '';
+        closeDropdown();
         return;
       }
       try {
         const matches = await suggestCities(query);
-        cityOptions.innerHTML = matches.map(city => {
+        currentMatches = matches;
+        if (matches.length === 0) {
+          closeDropdown();
+          return;
+        }
+
+        cityDropdown.innerHTML = matches.map((city, idx) => {
           const label = formatCityLabel(city);
           cityCache.set(label, city);
           cityCache.set(city.name, city);
-          return `<option value="${label}"></option>`;
+          const coords = `${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°`;
+          return `
+            <div class="city-option" role="option" data-index="${idx}" tabindex="-1">
+              <div class="city-name">${escapeHtml(city.name)}</div>
+              <div class="city-meta">${escapeHtml([city.admin1, city.country].filter(Boolean).join(', '))}</div>
+              <div class="city-coords">${coords}</div>
+            </div>
+          `;
         }).join('');
+
+        cityDropdown.classList.add('visible');
+        cityInput.setAttribute('aria-expanded', 'true');
+        selectedIndex = -1;
+
+        const options = cityDropdown.querySelectorAll('.city-option');
+        options.forEach(opt => {
+          opt.addEventListener('click', () => {
+            const idx = parseInt(opt.getAttribute('data-index'), 10);
+            selectCity(currentMatches[idx]);
+          });
+        });
       } catch (err) {
         console.warn('City lookup failed', err);
+        closeDropdown();
       }
     }, 250);
   });
+
+  cityInput.addEventListener('keydown', (e) => {
+    const options = cityDropdown.querySelectorAll('.city-option');
+    if (!options.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
+      updateSelection(options);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, -1);
+      updateSelection(options);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      selectCity(currentMatches[selectedIndex]);
+    } else if (e.key === 'Escape') {
+      closeDropdown();
+    }
+  });
+
+  function updateSelection(options) {
+    options.forEach((opt, idx) => {
+      if (idx === selectedIndex) {
+        opt.classList.add('selected');
+        opt.scrollIntoView({ block: 'nearest' });
+      } else {
+        opt.classList.remove('selected');
+      }
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!cityInput.contains(e.target) && !cityDropdown.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 function setupPersistenceListeners() {
@@ -237,13 +390,12 @@ function isoYearStart(today) {
 }
 
 function resetAll() {
-  state = defaultState();
-  cityCache.clear();
-  cityOptions.innerHTML = '';
-  statsDom.innerHTML = '';
-  Object.values(charts).forEach(chart => chart.clear());
-  saveState(state);
-  prefillInputs();
+  try {
+    localStorage.removeItem('gor:v1');
+  } catch (err) {
+    console.warn('Failed to clear saved state', err);
+  }
+  window.location.reload();
 }
 
 function formatCityLabel(city) {

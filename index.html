@@ -11,37 +11,43 @@
   <script type="module" src="./js/ui.js"></script>
 </head>
 <body>
-  <header class="container">
-    <h1>Grain of Rain</h1>
-    <p>Weather insights with automatic light and dark themes.</p>
-  </header>
   <main class="container-fluid">
     <div id="workspace">
       <section id="charts" aria-label="Forecast charts">
-        <div id="chart-temp" class="chart" role="img" aria-label="Temperature chart"></div>
-        <div id="chart-hydro" class="chart" role="img" aria-label="Hydrology chart"></div>
+        <div class="chart-card">
+          <header>Temperature · Climate Norm · Wind</header>
+          <div id="chart-temp" class="chart" role="img" aria-label="Temperature chart"></div>
+        </div>
+        <div class="chart-card">
+          <header>Precipitation · Humidity</header>
+          <div id="chart-hydro" class="chart" role="img" aria-label="Hydrology chart"></div>
+        </div>
       </section>
-      <aside id="sidebar">
-        <form id="controls">
-          <label for="city">City</label>
-          <input id="city" placeholder="Search city" list="city-options" autocomplete="off" />
-          <datalist id="city-options"></datalist>
+      <aside id="panel">
+        <section id="stats" aria-live="polite"></section>
+        <form id="controls" aria-label="Data configuration">
+          <div class="city-autocomplete">
+            <label for="city" class="sr-only">City</label>
+            <input id="city" placeholder="City" autocomplete="off" aria-autocomplete="list" aria-expanded="false" />
+            <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
+          </div>
 
-          <div class="grid" role="group" aria-labelledby="date-range-label">
-            <span id="date-range-label" class="label">Date range</span>
+          <div class="date-row">
             <label for="start" class="sr-only">Start date</label>
             <input id="start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
             <label for="end" class="sr-only">End date</label>
             <input id="end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
           </div>
 
-          <div class="button-row">
-            <button id="apply" type="submit">Apply</button>
-            <button id="reset" type="button" class="secondary">Reset</button>
-            <button id="export" type="button" class="secondary">Export PNG</button>
+          <div class="button-main">
+            <button id="apply" type="submit" class="primary">Apply</button>
+          </div>
+          <div class="button-helpers">
+            <button id="copy" type="button" title="Copy charts">📋 Copy</button>
+            <button id="download" type="button" title="Download charts">💾 Download</button>
+            <button id="reset" type="button" title="Reset app" class="danger">♻️ Reset</button>
           </div>
         </form>
-        <section id="stats" aria-live="polite"></section>
       </aside>
     </div>
   </main>

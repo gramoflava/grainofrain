@@ -7,17 +7,23 @@ export function initCharts() {
 
 export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: true }) {
   const x = series.x;
-  const tempRange = series.tempMax.map((max, i) => max - series.tempMin[i]);
+  const tempRange = series.tempMax.map((max, i) => (isFiniteNumber(max) && isFiniteNumber(series.tempMin[i]) ? max - series.tempMin[i] : null));
   const windSeries = (series.windMax && series.windMax.length) ? series.windMax : series.wind;
   const windAxisMax = 200;
-  const gridTop = { left: 60, right: 60, top: 60, bottom: 40 };
-  const gridBottom = { left: 60, right: 60, top: 60, bottom: 50 };
+  const gridTop = { left: 36, right: 32, top: 20, bottom: 32, containLabel: true };
+  const gridBottom = { left: 36, right: 32, top: 24, bottom: 36, containLabel: true };
 
-  const baseXAxis = { type: 'category', data: x, boundaryGap: true, axisLabel: { hideOverlap: true } };
+  const baseXAxis = {
+    type: 'category',
+    data: x,
+    boundaryGap: true,
+    axisLabel: { hideOverlap: true, color: '#546E7A', margin: 12 },
+    axisTick: { show: false },
+    axisLine: { lineStyle: { color: '#CFD8DC' } }
+  };
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
   const tooltip = { trigger: 'axis', valueFormatter: valueFmt };
 
-  const tempLegend = ['Temp Min', 'Temp Range', 'Temp Max', 'Temp Mean', 'Wind'];
   const tempSeries = [
     {
       name: 'Temp Min',
@@ -68,7 +74,6 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
   ];
 
   if (series.norm) {
-    tempLegend.push('Climate Norm');
     tempSeries.push({
       name: 'Climate Norm',
       type: 'line',
@@ -81,31 +86,26 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
 
   ch.temp.setOption({
     animation: false,
-    title: { text: 'Temperature & Wind', left: 'left', top: 10, textStyle: { fontSize: 14 } },
-    legend: { top: 30, left: 'left', data: tempLegend },
+    legend: { show: false },
     grid: gridTop,
     tooltip,
     xAxis: baseXAxis,
     yAxis: [
       {
         type: 'value',
-        name: '°C',
-        nameGap: 55,
-        nameLocation: 'middle',
-        nameRotate: 90,
-        splitLine: { show: prefs.showGrid }
+        splitLine: { show: prefs.showGrid, lineStyle: { color: '#ECEFF1' } },
+        axisLabel: { show: false },
+        axisTick: { show: false },
+        axisLine: { show: false }
       },
       {
         type: 'value',
-        name: 'km/h',
-        position: 'right',
-        nameGap: 55,
-        nameLocation: 'middle',
-        nameRotate: -90,
         min: 0,
         max: windAxisMax,
         splitLine: { show: false },
-        axisLabel: { formatter: '{value}' }
+        axisLabel: { show: false },
+        axisTick: { show: false },
+        axisLine: { show: false }
       }
     ],
     series: tempSeries
@@ -113,30 +113,26 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
 
   ch.hydro.setOption({
     animation: false,
-    title: { text: 'Precipitation & Humidity', left: 'left', top: 10, textStyle: { fontSize: 14 } },
-    legend: { top: 30, left: 'left', data: ['Precipitation', 'Humidity'] },
+    legend: { show: false },
     grid: gridBottom,
     tooltip,
     xAxis: baseXAxis,
     yAxis: [
       {
         type: 'value',
-        name: 'mm',
-        nameGap: 55,
-        nameLocation: 'middle',
-        nameRotate: 90,
-        splitLine: { show: prefs.showGrid }
+        splitLine: { show: prefs.showGrid, lineStyle: { color: '#ECEFF1' } },
+        axisLabel: { show: false },
+        axisTick: { show: false },
+        axisLine: { show: false }
       },
       {
         type: 'value',
-        name: '%',
-        position: 'right',
         min: 0,
         max: 100,
-        nameGap: 55,
-        nameLocation: 'middle',
-        nameRotate: -90,
-        splitLine: { show: false }
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        axisTick: { show: false },
+        axisLine: { show: false }
       }
     ],
     series: [
@@ -160,4 +156,8 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
       }
     ]
   });
+}
+
+function isFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
 }
