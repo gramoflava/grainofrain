@@ -12,6 +12,25 @@
 </head>
 <body>
   <main class="container-fluid">
+    <header id="config-bar">
+      <form id="controls" aria-label="Data configuration">
+        <div class="city-autocomplete">
+          <label for="city" class="sr-only">City</label>
+          <input id="city" placeholder="City" autocomplete="off" aria-autocomplete="list" aria-expanded="false" />
+          <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
+        </div>
+
+        <input id="start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
+        <input id="end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
+
+        <button id="apply" type="submit" class="primary">Apply</button>
+        <div class="spacer"></div>
+        <button id="copy" type="button" title="Copy charts">📋</button>
+        <button id="download" type="button" title="Download charts">💾</button>
+        <button id="reset" type="button" title="Reset app" class="danger">♻️</button>
+      </form>
+    </header>
+
     <div id="workspace">
       <section id="charts" aria-label="Forecast charts">
         <div class="chart-card">
@@ -25,29 +44,6 @@
       </section>
       <aside id="panel">
         <section id="stats" aria-live="polite"></section>
-        <form id="controls" aria-label="Data configuration">
-          <div class="city-autocomplete">
-            <label for="city" class="sr-only">City</label>
-            <input id="city" placeholder="City" autocomplete="off" aria-autocomplete="list" aria-expanded="false" />
-            <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
-          </div>
-
-          <div class="date-row">
-            <label for="start" class="sr-only">Start date</label>
-            <input id="start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
-            <label for="end" class="sr-only">End date</label>
-            <input id="end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" maxlength="10" />
-          </div>
-
-          <div class="button-main">
-            <button id="apply" type="submit" class="primary">Apply</button>
-          </div>
-          <div class="button-helpers">
-            <button id="copy" type="button" title="Copy charts">📋 Copy</button>
-            <button id="download" type="button" title="Download charts">💾 Download</button>
-            <button id="reset" type="button" title="Reset app" class="danger">♻️ Reset</button>
-          </div>
-        </form>
       </aside>
     </div>
   </main>

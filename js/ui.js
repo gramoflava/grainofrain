@@ -20,6 +20,7 @@ prefillInputs();
 bindControls();
 setupCityAutocomplete();
 setupPersistenceListeners();
+autoApplyOnLoad();
 
 async function apply() {
   const cityValue = cityInput.value.trim();
@@ -132,16 +133,16 @@ export function bindControls() {
 
 export function fillStats(dom, stats) {
   dom.innerHTML = `<table>
-  <tr><th>Min temp</th><td>${formatTemp(stats.minT)}</td><td></td></tr>
-  <tr><th>Max temp</th><td>${formatTemp(stats.maxT)}</td><td></td></tr>
-  <tr><th>Avg temp</th><td>${formatTemp(stats.avgT)}</td><td></td></tr>
-  <tr><th>Climate dev</th><td>${formatDeviation(stats.climateDev)}</td><td></td></tr>
-  <tr><th>Total precip</th><td>${formatPrecip(stats.precipTotal)}</td><td></td></tr>
-  <tr><th>Max daily precip</th><td>${formatPrecip(stats.precipMax)}</td><td></td></tr>
-  <tr><th>Days >0.1 mm</th><td>${stats.precipDays}</td><td></td></tr>
-  <tr><th>Avg humidity</th><td>${formatPercent(stats.humAvg)}</td><td></td></tr>
-  <tr><th>Avg wind</th><td>${formatWind(stats.windAvg)}</td><td></td></tr>
-  <tr><th>Max wind</th><td>${formatWind(stats.windMax)}</td><td></td></tr>
+  <tr><th>Min temp</th><td>${formatTemp(stats.minT)}</td></tr>
+  <tr><th>Max temp</th><td>${formatTemp(stats.maxT)}</td></tr>
+  <tr><th>Avg temp</th><td>${formatTemp(stats.avgT)}</td></tr>
+  <tr><th>Climate dev</th><td>${formatDeviation(stats.climateDev)}</td></tr>
+  <tr><th>Total precip</th><td>${formatPrecip(stats.precipTotal)}</td></tr>
+  <tr><th>Max daily</th><td>${formatPrecip(stats.precipMax)}</td></tr>
+  <tr><th>Days >0.1mm</th><td>${stats.precipDays}</td></tr>
+  <tr><th>Avg humidity</th><td>${formatPercent(stats.humAvg)}</td></tr>
+  <tr><th>Avg wind</th><td>${formatWind(stats.windAvg)}</td></tr>
+  <tr><th>Max wind</th><td>${formatWind(stats.windMax)}</td></tr>
   </table>`;
 }
 
@@ -402,4 +403,15 @@ function formatCityLabel(city) {
   if (!city) return '';
   const parts = [city.name, city.admin1, city.country].filter(Boolean);
   return parts.join(', ');
+}
+
+function autoApplyOnLoad() {
+  const hasCity = cityInput.value.trim().length > 0;
+  const hasValidState = state.entities && state.entities.length > 0;
+
+  if (hasCity && hasValidState) {
+    setTimeout(() => {
+      apply();
+    }, 100);
+  }
 }
