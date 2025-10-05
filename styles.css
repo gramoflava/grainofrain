@@ -107,6 +107,7 @@ main.container-fluid {
   padding: 0.6rem;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 #charts {
@@ -171,6 +172,24 @@ main.container-fluid {
   gap: 0;
   font-size: 0.8rem;
   overflow: hidden;
+}
+
+#workspace.no-data::before {
+  content: 'NO DATA';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  z-index: 10;
+}
+
+#workspace.no-data #charts,
+#workspace.no-data #panel {
+  visibility: hidden;
 }
 
 #stats .stats-title {
@@ -393,6 +412,43 @@ main.container-fluid {
   border-color: var(--border-color);
 }
 
+#controls select {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  height: 30px;
+  width: 140px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23607d8b" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 0.3rem center;
+  background-size: 1.2rem;
+  padding-right: 1.8rem;
+}
+
+#controls select:hover {
+  border-color: #1e88e5;
+}
+
+#controls select:focus {
+  outline: none;
+  border-color: #1e88e5;
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  #controls select {
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23b0b0b0" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+  }
+}
+
 #controls input {
   padding: 0.3rem 0.5rem;
   font-size: 0.85rem;
@@ -429,6 +485,92 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 #start, #end {
   width: 150px;
+  flex-shrink: 0;
+}
+
+/* Mode controls */
+.mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 1 auto;
+}
+
+.mode-controls.hidden {
+  display: none;
+}
+
+#controls-periodic .city-input-wrapper {
+  width: 180px;
+}
+
+/* Year tags */
+.year-tags-container {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.year-tags {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.year-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #fff;
+  transition: all 0.15s ease;
+}
+
+.year-tag.tag-blue {
+  background: #1E88E5;
+}
+
+.year-tag.tag-red {
+  background: #E53935;
+}
+
+.year-tag.tag-green {
+  background: #43A047;
+}
+
+.year-tag:hover {
+  filter: brightness(1.1);
+}
+
+.year-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: background 0.15s ease;
+}
+
+.year-tag-remove:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.year-input {
+  width: 100px;
+  flex-shrink: 0;
+}
+
+#controls-periodic input[type="text"] {
+  width: 110px;
   flex-shrink: 0;
 }
 
@@ -573,6 +715,12 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 .icon-btn.danger:hover {
   background: #ffebee !important;
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 @media (prefers-color-scheme: dark) {

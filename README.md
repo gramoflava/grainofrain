@@ -14,15 +14,34 @@ A client-side weather data analysis tool for exploring historical and current we
 
 ### 2. Single-Screen Information Density
 - All relevant data visible at once — no scrolling, no tabs, no hidden panels
-- Compare up to 3 cities side-by-side in a single view
+- Compare up to 3 cities or time periods side-by-side in a single view
 - Statistical summaries and visual charts coexist on one page
 - Dense information presentation without clutter
 
 ### 3. Exploration and Analysis Focus
 - Historical weather data analysis across custom date ranges
 - Cross-city comparisons to identify patterns and anomalies
+- Periodic analysis to compare climate evolution across years
 - Climate deviation tracking (actual vs. climate normals)
 - Flexible date ranges from single days to full years
+
+## Analysis Modes
+
+**Grain of Rain** offers three distinct analysis modes:
+
+### Overview Mode
+- Analyze 1-3 cities simultaneously over a custom date range
+- Compare weather patterns across different locations
+- Perfect for travel planning and location comparison
+
+### Periodic Mode
+- Compare the same time period across different years (e.g., summer 2015 vs. 2020 vs. 2025)
+- Visualize climate change and seasonal shifts over time
+- Track how specific periods have evolved in a single location
+
+### Progression Mode (Coming Soon)
+- Year-over-year progression analysis
+- Long-term climate trend visualization
 
 ## Value Proposition
 

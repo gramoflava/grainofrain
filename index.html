@@ -18,15 +18,46 @@
     <header id="config-bar">
       <form id="controls" aria-label="Data configuration">
         <div class="controls-row">
-          <div class="city-tags-container">
-            <div id="city-tags" class="city-tags"></div>
+          <select id="mode-selector" aria-label="Analysis mode">
+            <option value="comparison">Overview</option>
+            <option value="periodic">Periodic</option>
+            <option value="progression" disabled>Progression</option>
+          </select>
+
+          <!-- Comparison Mode Controls -->
+          <div id="controls-comparison" class="mode-controls">
+            <div class="city-tags-container">
+              <div id="city-tags" class="city-tags"></div>
+              <div class="city-input-wrapper">
+                <input
+                  id="city-search"
+                  class="city-search-input"
+                  type="search"
+                  name="search-location"
+                  placeholder="Add city..."
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  aria-autocomplete="list"
+                  aria-expanded="false"
+                />
+                <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
+              </div>
+            </div>
+
+            <input id="start" type="date" />
+            <input id="end" type="date" />
+          </div>
+
+          <!-- Periodic Mode Controls -->
+          <div id="controls-periodic" class="mode-controls hidden">
             <div class="city-input-wrapper">
               <input
-                id="city-search"
+                id="periodic-city-search"
                 class="city-search-input"
                 type="search"
-                name="search-location"
-                placeholder="Add city..."
+                placeholder="Select city..."
                 autocomplete="off"
                 autocorrect="off"
                 autocapitalize="off"
@@ -34,12 +65,24 @@
                 aria-autocomplete="list"
                 aria-expanded="false"
               />
-              <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
+              <div id="periodic-city-dropdown" class="city-dropdown" role="listbox"></div>
             </div>
-          </div>
 
-          <input id="start" type="date" />
-          <input id="end" type="date" />
+            <div class="year-tags-container">
+              <div id="year-tags" class="year-tags"></div>
+              <input
+                id="year-input"
+                class="year-input"
+                type="number"
+                placeholder="Add year..."
+                min="1940"
+                max="2100"
+              />
+            </div>
+
+            <input id="period-start" type="text" placeholder="MM-DD start" pattern="\d{2}-\d{2}" />
+            <input id="period-end" type="text" placeholder="MM-DD end" pattern="\d{2}-\d{2}" />
+          </div>
 
           <div class="spacer"></div>
 

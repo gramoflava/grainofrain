@@ -11,24 +11,57 @@ let state = loadState();
 const charts = initCharts();
 const cityCache = new Map();
 let selectedCities = [];
+let periodicCity = null;
+let hasData = false;
+
+const modeSelector = document.getElementById('mode-selector');
+const comparisonControls = document.getElementById('controls-comparison');
+const periodicControls = document.getElementById('controls-periodic');
 
 const startInput = document.getElementById('start');
 const endInput = document.getElementById('end');
 const statsDom = document.getElementById('stats');
+const chartsDom = document.getElementById('charts');
+const workspaceDom = document.getElementById('workspace');
 const citySearchInput = document.getElementById('city-search');
 const cityTagsContainer = document.getElementById('city-tags');
 const cityDropdown = document.getElementById('city-dropdown');
 
+const periodicCitySearchInput = document.getElementById('periodic-city-search');
+const periodicCityDropdown = document.getElementById('periodic-city-dropdown');
+const yearInput = document.getElementById('year-input');
+const yearTagsContainer = document.getElementById('year-tags');
+const periodStartInput = document.getElementById('period-start');
+const periodEndInput = document.getElementById('period-end');
+
+let selectedYears = [];
+
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const MM_DD_REGEX = /^\d{2}-\d{2}$/;
 const MAX_CITIES = 3;
 
 prefillInputs();
 bindControls();
+setupModeSelector();
 setupCityTagSelector();
+setupPeriodicCitySelector();
+setupYearTagSelector();
 restoreCityTags();
+restorePeriodicInputs();
+showNoDataPlaceholder();
 autoApplyOnLoad();
 
 async function apply() {
+  const currentMode = state.mode;
+
+  if (currentMode === 'comparison') {
+    await applyComparison();
+  } else if (currentMode === 'periodic') {
+    await applyPeriodic();
+  }
+}
+
+async function applyComparison() {
   const startValue = startInput.value.trim();
   const endValue = endInput.value.trim();
 
@@ -107,12 +140,105 @@ async function apply() {
       fillStats(statsDom, allStats, labels, startIso, endIso);
     }
 
+    showDataView();
     state.entities = entities;
     state.date = { start: startIso, end: endIso, endIsToday };
     saveState(state);
   } catch (e) {
     console.error(e);
     showMessage(e.message || 'An error occurred', 'error');
+  }
+}
+
+async function applyPeriodic() {
+  if (!periodicCity) {
+    return showMessage('Select a city', 'error');
+  }
+
+  if (selectedYears.length === 0) {
+    return showMessage('Add at least one year', 'error');
+  }
+
+  const periodStart = periodStartInput.value.trim();
+  const periodEnd = periodEndInput.value.trim();
+
+  if (!periodStart || !periodEnd) {
+    return showMessage('Fill start and end period (MM-DD)', 'error');
+  }
+
+  if (!MM_DD_REGEX.test(periodStart) || !MM_DD_REGEX.test(periodEnd)) {
+    return showMessage('Period must use MM-DD format', 'error');
+  }
+
+  try {
+    const allSeries = [];
+    const allStats = [];
+    const labels = [];
+
+    for (let i = 0; i < selectedYears.length; i++) {
+      const year = selectedYears[i];
+      const startIso = `${year}-${periodStart}`;
+      const endIso = `${year}-${periodEnd}`;
+
+      const daily = await fetchDaily(periodicCity.lat, periodicCity.lon, startIso, endIso);
+      const hourly = await fetchHourly(periodicCity.lat, periodicCity.lon, startIso, endIso);
+      const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
+      const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
+
+      let normals = null;
+      if (state.prefs.showNormals) {
+        try { normals = await fetchNormals(periodicCity.lat, periodicCity.lon); } catch (e) { normals = null; }
+      }
+
+      const series = buildSeries(daily, hum, wind, normals);
+      const stats = computeStats(series);
+
+      allSeries.push(series);
+      allStats.push(stats);
+      labels.push(year.toString());
+    }
+
+    if (allSeries.length === 1) {
+      renderAll(charts, allSeries[0], COLORS[0], state.prefs);
+    } else {
+      renderCompare(charts, allSeries, COLORS, state.prefs);
+    }
+
+    fillStatsPeriodic(statsDom, allStats, labels, periodicCity.name, periodStart, periodEnd);
+
+    showDataView();
+    state.periodic = {
+      city: periodicCity,
+      years: selectedYears,
+      periodStart,
+      periodEnd
+    };
+    saveState(state);
+  } catch (e) {
+    console.error(e);
+    showMessage(e.message || 'An error occurred', 'error');
+  }
+}
+
+function setupModeSelector() {
+  modeSelector.value = state.mode;
+  switchMode(state.mode);
+
+  modeSelector.addEventListener('change', (e) => {
+    const newMode = e.target.value;
+    state.mode = newMode;
+    saveState(state);
+    switchMode(newMode);
+  });
+}
+
+function switchMode(mode) {
+  if (mode === 'comparison') {
+    comparisonControls.classList.remove('hidden');
+    periodicControls.classList.add('hidden');
+  } else if (mode === 'periodic') {
+    comparisonControls.classList.add('hidden');
+    periodicControls.classList.remove('hidden');
   }
 }
 
@@ -126,8 +252,28 @@ function setupCityTagSelector() {
 
   // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.city-input-wrapper')) {
+    const wrapper = e.target.closest('.city-input-wrapper');
+    const isComparisonWrapper = wrapper && wrapper.closest('#controls-comparison');
+    if (!isComparisonWrapper) {
       cityDropdown.classList.remove('visible');
+    }
+  });
+}
+
+function setupPeriodicCitySelector() {
+  periodicCitySearchInput.addEventListener('input', handlePeriodicCitySearch);
+  periodicCitySearchInput.addEventListener('focus', () => {
+    if (periodicCitySearchInput.value.trim()) {
+      handlePeriodicCitySearch();
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const wrapper = e.target.closest('.city-input-wrapper');
+    const isPeriodicWrapper = wrapper && wrapper.closest('#controls-periodic');
+    if (!isPeriodicWrapper) {
+      periodicCityDropdown.classList.remove('visible');
     }
   });
 }
@@ -231,6 +377,142 @@ function updateCitySearchState() {
   }
 }
 
+async function handlePeriodicCitySearch() {
+  const query = periodicCitySearchInput.value.trim();
+
+  if (query.length < 2) {
+    periodicCityDropdown.classList.remove('visible');
+    return;
+  }
+
+  try {
+    const cities = await suggestCities(query);
+    displayPeriodicCitySuggestions(cities);
+  } catch (err) {
+    console.error('City search error:', err);
+    periodicCityDropdown.classList.remove('visible');
+  }
+}
+
+function displayPeriodicCitySuggestions(cities) {
+  if (!cities || cities.length === 0) {
+    periodicCityDropdown.classList.remove('visible');
+    return;
+  }
+
+  periodicCityDropdown.innerHTML = cities.map(city => {
+    const label = formatCityLabel(city);
+    cityCache.set(label, city);
+    cityCache.set(city.name, city);
+
+    return `
+      <div class="city-option" data-city-name="${escapeHtml(city.name)}">
+        <div class="city-name">${escapeHtml(city.name)}</div>
+        <div class="city-meta">${escapeHtml([city.admin1, city.country].filter(Boolean).join(', '))}</div>
+        <div class="city-coords">${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°</div>
+      </div>
+    `;
+  }).join('');
+
+  periodicCityDropdown.querySelectorAll('.city-option').forEach(option => {
+    option.addEventListener('click', () => {
+      const cityName = option.getAttribute('data-city-name');
+      const city = cityCache.get(cityName);
+      if (city) {
+        selectPeriodicCity(city);
+      }
+    });
+  });
+
+  periodicCityDropdown.classList.add('visible');
+}
+
+function selectPeriodicCity(city) {
+  periodicCity = city;
+  periodicCitySearchInput.value = formatCityLabel(city);
+  periodicCityDropdown.classList.remove('visible');
+}
+
+function setupYearTagSelector() {
+  yearInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addYearTag();
+    }
+  });
+
+  yearInput.addEventListener('blur', () => {
+    addYearTag();
+  });
+}
+
+function addYearTag() {
+  const yearValue = yearInput.value.trim();
+
+  if (!yearValue) return;
+
+  const year = parseInt(yearValue, 10);
+
+  if (isNaN(year) || year < 1940 || year > 2100) {
+    showMessage('Year must be between 1940 and 2100', 'error');
+    yearInput.value = '';
+    return;
+  }
+
+  if (selectedYears.length >= 3) {
+    showMessage('Maximum 3 years', 'error');
+    yearInput.value = '';
+    return;
+  }
+
+  if (selectedYears.includes(year)) {
+    showMessage('Year already added', 'error');
+    yearInput.value = '';
+    return;
+  }
+
+  selectedYears.push(year);
+  renderYearTags();
+  updateYearInputState();
+  yearInput.value = '';
+}
+
+function removeYearTag(index) {
+  selectedYears.splice(index, 1);
+  renderYearTags();
+  updateYearInputState();
+}
+
+function renderYearTags() {
+  yearTagsContainer.innerHTML = selectedYears.map((year, index) => {
+    const colorClass = `tag-${COLOR_NAMES[index]}`;
+    return `
+      <div class="year-tag ${colorClass}">
+        <span>${year}</span>
+        <span class="year-tag-remove" data-index="${index}">×</span>
+      </div>
+    `;
+  }).join('');
+
+  // Attach remove listeners
+  yearTagsContainer.querySelectorAll('.year-tag-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const index = parseInt(btn.getAttribute('data-index'), 10);
+      removeYearTag(index);
+    });
+  });
+}
+
+function updateYearInputState() {
+  if (selectedYears.length >= 3) {
+    yearInput.disabled = true;
+    yearInput.placeholder = 'Max 3';
+  } else {
+    yearInput.disabled = false;
+    yearInput.placeholder = 'Add year...';
+  }
+}
+
 function restoreCityTags() {
   if (state.entities && state.entities.length > 0) {
     selectedCities = state.entities.map(e => ({
@@ -242,6 +524,24 @@ function restoreCityTags() {
     }));
     renderCityTags();
     updateCitySearchState();
+  }
+}
+
+function restorePeriodicInputs() {
+  if (state.periodic && state.periodic.city) {
+    periodicCity = state.periodic.city;
+    periodicCitySearchInput.value = formatCityLabel(periodicCity);
+  }
+  if (state.periodic && state.periodic.years.length > 0) {
+    selectedYears = [...state.periodic.years];
+    renderYearTags();
+    updateYearInputState();
+  }
+  if (state.periodic && state.periodic.periodStart) {
+    periodStartInput.value = state.periodic.periodStart;
+  }
+  if (state.periodic && state.periodic.periodEnd) {
+    periodEndInput.value = state.periodic.periodEnd;
   }
 }
 
@@ -257,6 +557,7 @@ export function bindControls() {
   const downloadBtn = document.getElementById('download');
   if (downloadBtn) {
     downloadBtn.addEventListener('click', async () => {
+      if (!hasData) return;
       try {
         await exportPng('workspace', buildFilename());
         showMessage('✓ Chart downloaded', 'success');
@@ -270,6 +571,7 @@ export function bindControls() {
   const copyBtn = document.getElementById('copy');
   if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
+      if (!hasData) return;
       try {
         await copyPngToClipboard('workspace');
         showMessage('✓ Charts copied to clipboard', 'success');
@@ -336,6 +638,56 @@ export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate =
   dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>`;
 }
 
+function fillStatsPeriodic(dom, statsArray, yearLabels, cityName, periodStart, periodEnd) {
+  const numYears = statsArray.length;
+  const isComparison = numYears > 1;
+
+  // Format period display
+  const periodDisplay = `${periodStart} – ${periodEnd}`;
+
+  // Title with city and period
+  let titleHtml = `<div class="stats-title"><div class="stats-city">${escapeHtml(cityName)}</div><div class="stats-period">${periodDisplay}</div></div>`;
+
+  // Header row with years
+  let headerHtml = '';
+  if (isComparison) {
+    headerHtml = `<div class="stats-header-row" style="grid-template-columns: auto repeat(${numYears}, 1fr);">`;
+    headerHtml += `<div class="stats-label"></div>`;
+    yearLabels.forEach((label, i) => {
+      const colorClass = `color-${COLOR_NAMES[i]}`;
+      headerHtml += `<div class="stats-value"><span class="${colorClass}">${escapeHtml(label)}</span></div>`;
+    });
+    headerHtml += '</div>';
+  }
+
+  const metrics = [
+    { key: 'maxT', label: 'T↑', tooltip: 'Maximum temperature', format: formatTemp },
+    { key: 'avgT', label: 'T~', tooltip: 'Average temperature', format: formatTemp },
+    { key: 'minT', label: 'T↓', tooltip: 'Minimum temperature', format: formatTemp },
+    { key: 'climateDev', label: 'ΔT', tooltip: 'Temperature deviation from climate norm', format: formatDeviation },
+    { key: 'precipTotal', label: '∑ Rain', tooltip: 'Total precipitation', format: formatPrecip },
+    { key: 'precipMax', label: 'Rain↑', tooltip: 'Maximum daily precipitation', format: formatPrecip },
+    { key: 'humAvg', label: 'RH%', tooltip: 'Average relative humidity', format: formatPercent },
+    { key: 'windMax', label: 'Wind↑', tooltip: 'Maximum wind speed', format: formatWind },
+    { key: 'windAvg', label: 'Wind~', tooltip: 'Average wind speed', format: formatWind },
+    { key: 'precipDays', label: 'Rain days', tooltip: 'Days with precipitation >0.1mm', format: v => v },
+    { key: 'totalDays', label: '∑ Days', tooltip: 'Total days in period', format: v => v }
+  ];
+
+  let tableHtml = '';
+  metrics.forEach(metric => {
+    tableHtml += `<div class="stats-row" style="grid-template-columns: auto repeat(${numYears}, 1fr);">`;
+    tableHtml += `<div class="stats-label" title="${metric.tooltip}">${metric.label}</div>`;
+    statsArray.forEach((stats, i) => {
+      tableHtml += `<div class="stats-value">${metric.format(stats[metric.key])}</div>`;
+    });
+    tableHtml += '</div>';
+  });
+
+  const headerSection = headerHtml ? `<div class="stats-header">${headerHtml}</div>` : '';
+  dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>`;
+}
+
 function formatTemp(value) {
   return isFiniteNumber(value) ? `${value.toFixed(1)} °C` : 'n/a';
 }
@@ -363,20 +715,31 @@ function isFiniteNumber(value) {
 }
 
 function buildFilename() {
-  const mode = state.mode || 'single';
+  const mode = state.mode || 'comparison';
   let baseName = 'grainofrain';
+  let dateRange = '';
 
-  if (mode === 'single' && state.entities.length > 0) {
-    const city = state.entities[0].label;
+  if (mode === 'comparison' && state.entities.length > 0) {
+    if (state.entities.length === 1) {
+      const city = state.entities[0].label;
+      baseName = city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'grainofrain';
+    } else {
+      const cities = state.entities.map(e => e.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')).join('-');
+      baseName = cities || 'compare';
+    }
+    const startDate = state.date?.start || '';
+    const endDate = state.date?.end || '';
+    dateRange = (startDate && endDate) ? `${startDate}-${endDate}` : (startDate || isoToday());
+  } else if (mode === 'periodic' && state.periodic?.city) {
+    const city = state.periodic.city.name;
     baseName = city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'grainofrain';
-  } else if (mode === 'compare' && state.entities.length > 0) {
-    const cities = state.entities.map(e => e.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')).join('-');
-    baseName = cities || 'compare';
-  }
 
-  const startDate = state.date?.start || '';
-  const endDate = state.date?.end || '';
-  const dateRange = (startDate && endDate) ? `${startDate}-${endDate}` : (startDate || isoToday());
+    const years = state.periodic.years.join('-');
+    const period = `${state.periodic.periodStart}_${state.periodic.periodEnd}`.replace(/\//g, '-');
+    dateRange = `${years}_${period}`;
+  } else {
+    dateRange = isoToday();
+  }
 
   return `${baseName}-${dateRange}.png`;
 }
@@ -460,12 +823,20 @@ function formatCityLabel(city) {
 }
 
 function autoApplyOnLoad() {
-  const hasValidState = state.entities && state.entities.length > 0 && selectedCities.length > 0;
-
-  if (hasValidState) {
-    setTimeout(() => {
-      apply();
-    }, 100);
+  if (state.mode === 'comparison') {
+    const hasValidState = state.entities && state.entities.length > 0 && selectedCities.length > 0;
+    if (hasValidState) {
+      setTimeout(() => {
+        apply();
+      }, 100);
+    }
+  } else if (state.mode === 'periodic') {
+    const hasValidState = state.periodic?.city && state.periodic?.years.length > 0;
+    if (hasValidState) {
+      setTimeout(() => {
+        apply();
+      }, 100);
+    }
   }
 }
 
@@ -532,4 +903,24 @@ function showMessage(text, type = 'info') {
     toast.classList.remove('visible');
     setTimeout(() => toast.remove(), 300);
   });
+}
+
+function showNoDataPlaceholder() {
+  workspaceDom.classList.add('no-data');
+  hasData = false;
+  updateExportButtons();
+}
+
+function showDataView() {
+  workspaceDom.classList.remove('no-data');
+  hasData = true;
+  updateExportButtons();
+}
+
+function updateExportButtons() {
+  const downloadBtn = document.getElementById('download');
+  const copyBtn = document.getElementById('copy');
+
+  if (downloadBtn) downloadBtn.disabled = !hasData;
+  if (copyBtn) copyBtn.disabled = !hasData;
 }
