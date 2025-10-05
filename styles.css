@@ -635,9 +635,10 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 .toast.toast-error {
-  background: #c62828;
+  background: #546e7a;
   max-width: 600px;
   text-align: left;
+  font-weight: 400;
 }
 
 .toast.toast-info {

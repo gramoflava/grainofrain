@@ -485,32 +485,25 @@ function handleClipboardError(err) {
   let message = 'Unable to copy to clipboard.\n\n';
 
   if (platform.isSafari) {
-    message += '**Safari Limitation**\n\n';
-    message += 'Safari doesn\'t support clipboard image copying.\n\n';
-    message += '• Use the 💾 Download button instead\n';
-    message += '• Or switch to Chrome/Firefox for clipboard support';
+    message += 'Safari doesn\'t support clipboard images.\n';
+    message += '• Use Download button\n';
+    message += '• Or try Chrome/Firefox';
   } else if (!navigator.clipboard) {
-    message += 'Your browser doesn\'t support clipboard API.\n\n';
-    message += '• Use the 💾 Download button instead\n';
-    message += '• Or access via HTTPS (required for clipboard)';
+    message += 'Clipboard API not supported.\n';
+    message += '• Use Download button\n';
+    message += '• Or access via HTTPS';
   } else if (err.message && err.message.includes('denied')) {
     if (platform.isMac) {
-      message += '**Permission denied**\n\n';
-      message += 'macOS: System Settings → Privacy & Security → Screen Recording\n';
-      message += 'Enable your browser for clipboard access.\n\n';
-      message += 'Alternative: Use the 💾 Download button';
+      message += 'Permission denied. Enable in:\n';
+      message += 'System Settings → Privacy & Security → Screen Recording';
     } else if (platform.isWindows) {
-      message += '**Permission denied**\n\n';
-      message += 'Windows: Settings → Privacy → Clipboard\n';
-      message += 'Allow apps to access clipboard.\n\n';
-      message += 'Alternative: Use the 💾 Download button';
+      message += 'Permission denied. Enable in:\n';
+      message += 'Settings → Privacy → Clipboard';
     } else {
-      message += 'Clipboard permission was denied.\n\n';
-      message += 'Alternative: Use the 💾 Download button';
+      message += 'Permission denied by browser.';
     }
   } else {
-    message += err.message || 'Unknown error\n\n';
-    message += 'Alternative: Use the 💾 Download button';
+    message += err.message || 'Unknown error occurred.';
   }
 
   showMessage(message, 'error');
