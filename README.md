@@ -2,6 +2,8 @@
 
 A client-side weather data analysis tool for exploring historical and current weather patterns across multiple cities.
 
+🌐 **[Try it live](https://grainofrain.gramoflava.xyz)** | 📦 **[Source code](https://github.com/gramoflava/grainofrain)**
+
 ## Philosophy
 
 **Grain of Rain** is built on three core principles:
