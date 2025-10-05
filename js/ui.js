@@ -304,11 +304,17 @@ async function applyPeriodic() {
     return showMessage('Add at least one year', 'error');
   }
 
-  const periodStart = periodStartInput.value.trim();
-  const periodEnd = periodEndInput.value.trim();
+  let periodStart = periodStartInput.value.trim();
+  let periodEnd = periodEndInput.value.trim();
 
-  if (!periodStart || !periodEnd) {
-    return showMessage('Fill start and end period (MM-DD)', 'error');
+  // Auto-fill with whole year if not specified
+  if (!periodStart) {
+    periodStart = '01-01';
+    periodStartInput.value = periodStart;
+  }
+  if (!periodEnd) {
+    periodEnd = '12-31';
+    periodEndInput.value = periodEnd;
   }
 
   if (!MM_DD_REGEX.test(periodStart) || !MM_DD_REGEX.test(periodEnd)) {
