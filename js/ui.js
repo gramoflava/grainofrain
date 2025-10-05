@@ -15,6 +15,7 @@ let periodicCity = null;
 let hasData = false;
 
 const modeSelector = document.getElementById('mode-selector');
+const smoothingSelector = document.getElementById('smoothing-selector');
 const comparisonControls = document.getElementById('controls-comparison');
 const periodicControls = document.getElementById('controls-periodic');
 const progressionControls = document.getElementById('controls-progression');
@@ -46,6 +47,7 @@ const yearToInput = document.getElementById('year-to');
 
 let selectedYears = [];
 let progressionCity = null;
+let abortController = null;
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const MM_DD_REGEX = /^\d{2}-\d{2}$/;
@@ -54,6 +56,7 @@ const MAX_CITIES = 3;
 prefillInputs();
 bindControls();
 setupModeSelector();
+setupSmoothingSelector();
 setupCityTagSelector();
 setupPeriodicCitySelector();
 setupProgressionCitySelector();
@@ -112,26 +115,46 @@ async function applyComparison() {
   startInput.value = startIso;
   endInput.value = endIsToday ? today : endIso;
 
+  // Calculate padding for smoothing
+  const smoothing = state.prefs.smoothing || 0;
+  const padding = Math.floor(smoothing / 2);
+  const paddedStart = addDays(startIso, -padding);
+  const paddedEnd = addDays(endIso, padding);
+
   try {
+    abortController = new AbortController();
+    const signal = abortController.signal;
+
     const entities = [];
     const allSeries = [];
     const allStats = [];
 
     for (let i = 0; i < selectedCities.length; i++) {
+      if (signal.aborted) throw new Error('Cancelled');
+
       const geo = selectedCities[i];
       const label = formatCityLabel(geo);
 
-      const daily = await fetchDaily(geo.lat, geo.lon, startIso, endIso);
-      const hourly = await fetchHourly(geo.lat, geo.lon, startIso, endIso);
+      const daily = await fetchDaily(geo.lat, geo.lon, paddedStart, paddedEnd, signal);
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const hourly = await fetchHourly(geo.lat, geo.lon, paddedStart, paddedEnd, signal);
       const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
       const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
 
       let normals = null;
       if (state.prefs.showNormals) {
-        try { normals = await fetchNormals(geo.lat, geo.lon); } catch (e) { normals = null; }
+        await new Promise(resolve => setTimeout(resolve, 200));
+        try { normals = await fetchNormals(geo.lat, geo.lon, signal); } catch (e) { normals = null; }
       }
 
-      const series = buildSeries(daily, hum, wind, normals);
+      let series = buildSeries(daily, hum, wind, normals);
+
+      // Apply smoothing and trim to original date range
+      if (smoothing > 0) {
+        series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
+      }
+
       const stats = computeStats(series);
 
       entities.push({
@@ -145,11 +168,6 @@ async function applyComparison() {
       });
       allSeries.push(series);
       allStats.push(stats);
-
-      // Add small delay between city requests
-      if (i < selectedCities.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
     }
 
     if (entities.length === 1) {
@@ -167,7 +185,11 @@ async function applyComparison() {
     saveState(state);
   } catch (e) {
     console.error(e);
-    showMessage(e.message || 'An error occurred', 'error');
+    if (e.message !== 'Cancelled') {
+      showMessage(e.message || 'An error occurred', 'error');
+    }
+  } finally {
+    abortController = null;
   }
 }
 
@@ -217,6 +239,9 @@ async function applyProgression() {
   let loadingToast = null;
 
   try {
+    abortController = new AbortController();
+    const signal = abortController.signal;
+
     const allSeries = [];
     const allStats = [];
     const labels = [];
@@ -226,20 +251,22 @@ async function applyProgression() {
     loadingToast = createProgressToast();
 
     for (let year = yearFrom; year <= yearTo; year++) {
+      if (signal.aborted) throw new Error('Cancelled');
+
       const currentIndex = year - yearFrom + 1;
       updateProgressToast(loadingToast, `Loading ${year}... (${currentIndex}/${totalYears})`);
 
       const { startDate, endDate } = getPeriodDates(year, periodConfig);
 
-      const daily = await fetchDaily(progressionCity.lat, progressionCity.lon, startDate, endDate);
-      const hourly = await fetchHourly(progressionCity.lat, progressionCity.lon, startDate, endDate);
+      const daily = await fetchDaily(progressionCity.lat, progressionCity.lon, startDate, endDate, signal);
+      const hourly = await fetchHourly(progressionCity.lat, progressionCity.lon, startDate, endDate, signal);
       const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
       const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
 
       let normals = null;
       if (state.prefs.showNormals && year === yearFrom) {
         // Fetch normals only once
-        try { normals = await fetchNormals(progressionCity.lat, progressionCity.lon); } catch (e) { normals = null; }
+        try { normals = await fetchNormals(progressionCity.lat, progressionCity.lon, signal); } catch (e) { normals = null; }
       }
 
       const series = buildSeries(daily, hum, wind, normals);
@@ -287,11 +314,15 @@ async function applyProgression() {
     // Remove loading toast on error
     if (loadingToast) removeProgressToast(loadingToast);
 
-    if (e.message && (e.message.includes('429') || e.message.includes('Too Many Requests'))) {
+    if (e.message === 'Cancelled') {
+      // Don't show error for user cancellation
+    } else if (e.message && (e.message.includes('429') || e.message.includes('Too Many Requests'))) {
       showMessage('Rate limited by API. Please wait a moment and try again with a smaller year range.', 'error');
     } else {
       showMessage(e.message || 'An error occurred', 'error');
     }
+  } finally {
+    abortController = null;
   }
 }
 
@@ -321,38 +352,52 @@ async function applyPeriodic() {
     return showMessage('Period must use MM-DD format', 'error');
   }
 
+  const smoothing = state.prefs.smoothing || 0;
+  const padding = Math.floor(smoothing / 2);
+
   try {
+    abortController = new AbortController();
+    const signal = abortController.signal;
+
     const allSeries = [];
     const allStats = [];
     const labels = [];
 
     for (let i = 0; i < selectedYears.length; i++) {
+      if (signal.aborted) throw new Error('Cancelled');
+
       const year = selectedYears[i];
       const startIso = `${year}-${periodStart}`;
       const endIso = `${year}-${periodEnd}`;
+      const paddedStart = addDays(startIso, -padding);
+      const paddedEnd = addDays(endIso, padding);
 
-      const daily = await fetchDaily(periodicCity.lat, periodicCity.lon, startIso, endIso);
-      const hourly = await fetchHourly(periodicCity.lat, periodicCity.lon, startIso, endIso);
+      const daily = await fetchDaily(periodicCity.lat, periodicCity.lon, paddedStart, paddedEnd, signal);
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const hourly = await fetchHourly(periodicCity.lat, periodicCity.lon, paddedStart, paddedEnd, signal);
       const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
       const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
 
       let normals = null;
       if (state.prefs.showNormals && i === 0) {
+        await new Promise(resolve => setTimeout(resolve, 200));
         // Fetch normals only once
-        try { normals = await fetchNormals(periodicCity.lat, periodicCity.lon); } catch (e) { normals = null; }
+        try { normals = await fetchNormals(periodicCity.lat, periodicCity.lon, signal); } catch (e) { normals = null; }
       }
 
-      const series = buildSeries(daily, hum, wind, normals);
+      let series = buildSeries(daily, hum, wind, normals);
+
+      // Apply smoothing and trim to original date range
+      if (smoothing > 0) {
+        series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
+      }
+
       const stats = computeStats(series);
 
       allSeries.push(series);
       allStats.push(stats);
       labels.push(year.toString());
-
-      // Add small delay between requests
-      if (i < selectedYears.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
     }
 
     if (allSeries.length === 1) {
@@ -373,7 +418,11 @@ async function applyPeriodic() {
     saveState(state);
   } catch (e) {
     console.error(e);
-    showMessage(e.message || 'An error occurred', 'error');
+    if (e.message !== 'Cancelled') {
+      showMessage(e.message || 'An error occurred', 'error');
+    }
+  } finally {
+    abortController = null;
   }
 }
 
@@ -386,7 +435,27 @@ function setupModeSelector() {
     state.mode = newMode;
     saveState(state);
     switchMode(newMode);
+    updateSmoothingVisibility();
   });
+}
+
+function setupSmoothingSelector() {
+  smoothingSelector.value = state.prefs.smoothing || 0;
+  updateSmoothingVisibility();
+
+  smoothingSelector.addEventListener('change', (e) => {
+    state.prefs.smoothing = parseInt(e.target.value, 10);
+    saveState(state);
+  });
+}
+
+function updateSmoothingVisibility() {
+  // Show smoothing only for Overview and Periodic modes
+  if (state.mode === 'comparison' || state.mode === 'periodic') {
+    smoothingSelector.style.display = '';
+  } else {
+    smoothingSelector.style.display = 'none';
+  }
 }
 
 function switchMode(mode) {
@@ -957,6 +1026,63 @@ function arraySum(arr) {
   return filtered.length > 0 ? sum(filtered) : null;
 }
 
+function addDays(dateStr, days) {
+  const date = new Date(dateStr + 'T00:00:00');
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function applySmoothingAndTrim(series, window, startDate, endDate) {
+  if (window === 0) return series;
+
+  const halfWindow = Math.floor(window / 2);
+
+  // Apply rolling average to tempMean and humidity
+  const smoothedTempMean = rollingAverage(series.tempMean, window);
+  const smoothedHumidity = rollingAverage(series.humidity, window);
+
+  // Find indices to trim to original date range
+  const startIdx = series.x.findIndex(d => d >= startDate);
+  const endIdx = series.x.findIndex(d => d > endDate);
+  const trimEnd = endIdx === -1 ? series.x.length : endIdx;
+
+  if (startIdx === -1) return series;
+
+  // Trim all arrays to original range
+  return {
+    x: series.x.slice(startIdx, trimEnd),
+    tempMax: series.tempMax.slice(startIdx, trimEnd),
+    tempMin: series.tempMin.slice(startIdx, trimEnd),
+    tempMean: smoothedTempMean.slice(startIdx, trimEnd),
+    precip: series.precip.slice(startIdx, trimEnd),
+    humidity: smoothedHumidity.slice(startIdx, trimEnd),
+    wind: series.wind.slice(startIdx, trimEnd),
+    windMax: series.windMax ? series.windMax.slice(startIdx, trimEnd) : null,
+    norm: series.norm ? series.norm.slice(startIdx, trimEnd) : null
+  };
+}
+
+function rollingAverage(arr, window) {
+  if (window === 0 || !arr || arr.length === 0) return arr;
+
+  const halfWindow = Math.floor(window / 2);
+  const result = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    const start = Math.max(0, i - halfWindow);
+    const end = Math.min(arr.length, i + halfWindow + 1);
+    const slice = arr.slice(start, end).filter(v => isFiniteNumber(v));
+
+    if (slice.length > 0) {
+      result.push(slice.reduce((a, b) => a + b, 0) / slice.length);
+    } else {
+      result.push(arr[i]);
+    }
+  }
+
+  return result;
+}
+
 function average(arr) {
   if (arr.length === 0) return NaN;
   return arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -1368,8 +1494,23 @@ function createProgressToast() {
   const toast = document.createElement('div');
   toast.id = 'toast-progress';
   toast.className = 'toast toast-info';
-  toast.textContent = 'Loading...';
 
+  const text = document.createElement('span');
+  text.textContent = 'Loading...';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'toast-cancel';
+  cancelBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-6.489 5.8a1 1 0 0 0 -1.218 1.567l1.292 1.293l-1.292 1.293l-.083 .094a1 1 0 0 0 1.497 1.32l1.293 -1.292l1.293 1.292l.094 .083a1 1 0 0 0 1.32 -1.497l-1.292 -1.293l1.292 -1.293l.083 -.094a1 1 0 0 0 -1.497 -1.32l-1.293 1.292l-1.293 -1.292l-.094 -.083z" /></svg>';
+  cancelBtn.onclick = () => {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+    removeProgressToast();
+  };
+
+  toast.appendChild(text);
+  toast.appendChild(cancelBtn);
   document.body.appendChild(toast);
   setTimeout(() => toast.classList.add('visible'), 10);
 
@@ -1378,7 +1519,8 @@ function createProgressToast() {
 
 function updateProgressToast(toast, text) {
   if (toast) {
-    toast.textContent = text;
+    const textSpan = toast.querySelector('span');
+    if (textSpan) textSpan.textContent = text;
   }
 }
 

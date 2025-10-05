@@ -18,7 +18,7 @@ export function defaultState() {
       yearFrom: null,
       yearTo: null
     },
-    prefs: { showNormals: true, showAllBands: false, showGrid: true },
+    prefs: { showNormals: true, showAllBands: false, showGrid: true, smoothing: 0 },
     lastCityLabel: ''
   };
 }

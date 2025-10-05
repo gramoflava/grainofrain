@@ -58,6 +58,7 @@ Built with vanilla JavaScript and minimal dependencies to ensure:
 - Long-term maintainability without framework lock-in
 - Full transparency — inspect and understand every line
 - Works offline once loaded (with cached data)
+- Icons: 28px from [Tabler Icons](https://tabler.io/icons)
 
 ## Development Philosophy
 

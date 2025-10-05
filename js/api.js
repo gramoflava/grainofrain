@@ -19,12 +19,12 @@ export async function suggestCities(name, limit = 8) {
   return results.map(mapGeoResult);
 }
 
-export async function fetchDaily(lat, lon, start, end) {
+export async function fetchDaily(lat, lon, start, end, signal) {
   const today = new Date().toISOString().slice(0,10);
   const actualEnd = end > today ? today : end;
 
   const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,windspeed_10m_max&timezone=UTC`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal });
   if (!res.ok) {
     if (res.status === 429) {
       throw new Error('Too many requests. Please wait a moment and try again.');
@@ -51,12 +51,12 @@ export async function fetchDaily(lat, lon, start, end) {
   return { date: dates, tmin, tmean, tmax, precip, windMax };
 }
 
-export async function fetchHourly(lat, lon, start, end) {
+export async function fetchHourly(lat, lon, start, end, signal) {
   const today = new Date().toISOString().slice(0,10);
   const actualEnd = end > today ? today : end;
 
   const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&hourly=relative_humidity_2m,windspeed_10m&timezone=UTC`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal });
   const json = await res.json();
   const hourly = json?.hourly || {};
   return {
@@ -92,9 +92,9 @@ export function dailyMeanFromHourly(time, values) {
   return { days, means };
 }
 
-export async function fetchNormals(lat, lon) {
+export async function fetchNormals(lat, lon, signal) {
   const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=1991-01-01&end_date=2020-12-31&daily=temperature_2m_mean&timezone=UTC`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal });
   if (!res.ok) {
     throw new Error('Failed to load climate normals');
   }

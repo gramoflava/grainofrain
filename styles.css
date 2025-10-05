@@ -780,6 +780,29 @@ input[type="date"]::-webkit-datetime-edit-text {
   opacity: 0;
   transition: all 0.3s ease;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.toast-cancel {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+  padding: 0;
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+}
+
+.toast-cancel:hover {
+  color: #fff;
 }
 
 .toast.visible {
