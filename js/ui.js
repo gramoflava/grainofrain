@@ -1,5 +1,5 @@
 import { loadState, saveState, defaultState } from './store.js';
-import { searchCity, fetchDaily, fetchHourly, dailyMeanFromHourly, fetchNormals, suggestCities } from './api.js';
+import { searchCity, fetchDaily, fetchHourly, dailyMeanFromHourly, fetchNormals, suggestCities, getLocationFromIP } from './api.js';
 import { buildSeries, computeStats } from './transform.js';
 import { initCharts, renderAll, renderCompare } from './charts.js';
 import { exportPng, copyPngToClipboard } from './export.js';
@@ -62,6 +62,7 @@ setupPeriodicCitySelector();
 setupProgressionCitySelector();
 setupYearTagSelector();
 setupPeriodTypeSelector();
+setupAutoLocationButtons();
 restoreCityTags();
 restorePeriodicInputs();
 restoreProgressionInputs();
@@ -1450,13 +1451,16 @@ function formatCityLabel(city) {
   return city.name;
 }
 
-function autoApplyOnLoad() {
+async function autoApplyOnLoad() {
   if (state.mode === 'comparison') {
     const hasValidState = state.entities && state.entities.length > 0 && selectedCities.length > 0;
     if (hasValidState) {
       setTimeout(() => {
         apply();
       }, 100);
+    } else {
+      // Auto-detect location on first visit
+      await autoDetectLocation();
     }
   } else if (state.mode === 'periodic') {
     const hasValidState = state.periodic?.city && state.periodic?.years.length > 0;
@@ -1472,6 +1476,25 @@ function autoApplyOnLoad() {
         apply();
       }, 100);
     }
+  }
+}
+
+async function autoDetectLocation() {
+  try {
+    const city = await getLocationFromIP();
+
+    if (!selectedCities.some(c => c.name === city.name)) {
+      addCityTag(city);
+      showMessage(`Detected location: ${city.name}`, 'success');
+
+      // Auto-apply after detecting location
+      setTimeout(() => {
+        apply();
+      }, 500);
+    }
+  } catch (err) {
+    // Silently fail on auto-detect - user can still enter manually
+    console.log('Auto-detect location failed:', err);
   }
 }
 
@@ -1602,4 +1625,77 @@ function updateExportButtons() {
 
   if (downloadBtn) downloadBtn.disabled = !hasData;
   if (copyBtn) copyBtn.disabled = !hasData;
+}
+
+function setupAutoLocationButtons() {
+  const autoLocationBtn = document.getElementById('auto-location-btn');
+  const autoLocationPeriodicBtn = document.getElementById('auto-location-periodic-btn');
+  const autoLocationProgressionBtn = document.getElementById('auto-location-progression-btn');
+
+  if (autoLocationBtn) {
+    autoLocationBtn.addEventListener('click', async () => {
+      if (selectedCities.length >= MAX_CITIES) {
+        showMessage(`Maximum ${MAX_CITIES} cities`, 'error');
+        return;
+      }
+
+      const img = autoLocationBtn.querySelector('img');
+      autoLocationBtn.disabled = true;
+      if (img) img.style.opacity = '0.5';
+
+      try {
+        const city = await getLocationFromIP();
+
+        if (selectedCities.some(c => c.name === city.name)) {
+          showMessage('City already added', 'info');
+        } else {
+          addCityTag(city);
+          showMessage(`Added ${city.name}`, 'success');
+        }
+      } catch (err) {
+        showMessage(err.message || 'Auto-detect failed', 'error');
+      } finally {
+        autoLocationBtn.disabled = false;
+        if (img) img.style.opacity = '1';
+      }
+    });
+  }
+
+  if (autoLocationPeriodicBtn) {
+    autoLocationPeriodicBtn.addEventListener('click', async () => {
+      const img = autoLocationPeriodicBtn.querySelector('img');
+      autoLocationPeriodicBtn.disabled = true;
+      if (img) img.style.opacity = '0.5';
+
+      try {
+        const city = await getLocationFromIP();
+        selectPeriodicCity(city);
+        showMessage(`Selected ${city.name}`, 'success');
+      } catch (err) {
+        showMessage(err.message || 'Auto-detect failed', 'error');
+      } finally {
+        autoLocationPeriodicBtn.disabled = false;
+        if (img) img.style.opacity = '1';
+      }
+    });
+  }
+
+  if (autoLocationProgressionBtn) {
+    autoLocationProgressionBtn.addEventListener('click', async () => {
+      const img = autoLocationProgressionBtn.querySelector('img');
+      autoLocationProgressionBtn.disabled = true;
+      if (img) img.style.opacity = '0.5';
+
+      try {
+        const city = await getLocationFromIP();
+        selectProgressionCity(city);
+        showMessage(`Selected ${city.name}`, 'success');
+      } catch (err) {
+        showMessage(err.message || 'Auto-detect failed', 'error');
+      } finally {
+        autoLocationProgressionBtn.disabled = false;
+        if (img) img.style.opacity = '1';
+      }
+    });
+  }
 }

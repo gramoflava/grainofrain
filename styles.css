@@ -388,10 +388,12 @@ main.container-fluid {
   position: relative;
   flex: 0 0 auto;
   width: 145px;
+  display: flex;
+  gap: 2px;
 }
 
 .city-search-input {
-  width: 100%;
+  flex: 1;
   padding: 0.3rem 0.5rem;
   font-size: 0.85rem;
   border-radius: 6px;
@@ -400,6 +402,49 @@ main.container-fluid {
   color: var(--text-primary);
   height: 30px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auto-location-btn {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auto-location-btn img {
+  transition: opacity 0.15s ease;
+}
+
+.auto-location-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: #1e88e5;
+  transform: scale(1.05);
+}
+
+.auto-location-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.auto-location-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-color-scheme: dark) {
+  .auto-location-btn img {
+    filter: invert(1) hue-rotate(180deg);
+  }
 }
 
 .city-search-input:hover {

@@ -212,6 +212,44 @@ function fillMissing(arr) {
   }
 }
 
+export async function getLocationFromIP() {
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    if (!res.ok) throw new Error('IP geolocation failed');
+    const data = await res.json();
+
+    if (!data.latitude || !data.longitude) {
+      throw new Error('Location data unavailable');
+    }
+
+    // Search for the city using the detected coordinates
+    const cityName = data.city || data.region || data.country_name;
+    if (cityName) {
+      const cities = await suggestCities(cityName, 5);
+      // Find the closest match by coordinates
+      if (cities.length > 0) {
+        const closest = cities.reduce((best, city) => {
+          const dist = Math.sqrt(
+            Math.pow(city.lat - data.latitude, 2) +
+            Math.pow(city.lon - data.longitude, 2)
+          );
+          const bestDist = Math.sqrt(
+            Math.pow(best.lat - data.latitude, 2) +
+            Math.pow(best.lon - data.longitude, 2)
+          );
+          return dist < bestDist ? city : best;
+        });
+        return closest;
+      }
+    }
+
+    throw new Error('Could not find city for your location');
+  } catch (err) {
+    console.error('IP geolocation error:', err);
+    throw new Error('Auto-detect failed. Please enter city manually.');
+  }
+}
+
 function mapGeoResult(r) {
   return {
     id: r.id,
