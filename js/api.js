@@ -26,7 +26,10 @@ export async function fetchDaily(lat, lon, start, end) {
   const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,windspeed_10m_max&timezone=UTC`;
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error('Failed to load daily data');
+    if (res.status === 429) {
+      throw new Error('Too many requests. Please wait a moment and try again.');
+    }
+    throw new Error(`Failed to load daily data (${res.status})`);
   }
   const json = await res.json();
   const daily = json?.daily || {};

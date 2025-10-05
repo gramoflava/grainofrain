@@ -4,6 +4,7 @@ export function buildSeries(daily, humidityAgg, windAgg, normals) {
   const normSeries = normals ? mapNormalsToDates(daily.date, normals) : null;
   return {
     x: daily.date,
+    dates: daily.date,
     tempMin: daily.tmin,
     tempMean: daily.tmean,
     tempMax: daily.tmax,
@@ -27,6 +28,7 @@ export function computeStats(series) {
   const windAvg = avg(series.wind);
   const windCandidates = series.windMax && series.windMax.length ? series.windMax : series.wind;
   const windMax = max(windCandidates);
+  const totalDays = series.dates ? series.dates.length : 0;
   let climateDev = null;
   if (series.norm) {
     const diffs = [];
@@ -41,7 +43,7 @@ export function computeStats(series) {
       climateDev = diffs.reduce((a, b) => a + b, 0) / diffs.length;
     }
   }
-  return { minT, maxT, avgT, climateDev, precipTotal, precipDays, precipMax, humAvg, windAvg, windMax };
+  return { minT, maxT, avgT, climateDev, precipTotal, precipDays, precipMax, humAvg, windAvg, windMax, totalDays };
 }
 
 function alignAggregates(dates, aggregate) {

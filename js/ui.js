@@ -222,32 +222,41 @@ export function bindControls() {
 
 export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate = '') {
   const numCities = statsArray.length;
-  const colSpan = numCities;
+  const isComparison = numCities > 1;
 
-  // Location row
-  let headerHtml = `<div class="stats-header-row" style="grid-template-columns: auto repeat(${numCities}, 1fr);"><div class="stats-label">Location</div>`;
-  cityLabels.forEach((label, i) => {
-    const colorClass = `color-${COLOR_NAMES[i]}`;
-    headerHtml += `<div class="stats-value ${colorClass}">${escapeHtml(label || `City ${i+1}`)}</div>`;
-  });
-  headerHtml += '</div>';
+  // Title with period
+  let titleHtml = '';
+  if (isComparison) {
+    titleHtml = `<div class="stats-title">${startDate}..${endDate}</div>`;
+  } else {
+    const cityName = cityLabels[0] || 'City';
+    titleHtml = `<div class="stats-title">${escapeHtml(cityName)}, ${startDate}..${endDate}</div>`;
+  }
 
-  // Period row (merged across all columns)
-  headerHtml += `<div class="stats-header-row" style="grid-template-columns: auto 1fr;"><div class="stats-label">Period</div>`;
-  headerHtml += `<div class="stats-value" style="grid-column: span ${colSpan};">${startDate} → ${endDate}</div>`;
-  headerHtml += '</div>';
+  // Header row with cities (only for comparison)
+  let headerHtml = '';
+  if (isComparison) {
+    headerHtml = `<div class="stats-header-row" style="grid-template-columns: auto repeat(${numCities}, 1fr);">`;
+    headerHtml += `<div class="stats-label"></div>`;
+    cityLabels.forEach((label, i) => {
+      const colorClass = `color-${COLOR_NAMES[i]}`;
+      headerHtml += `<div class="stats-value ${colorClass}">${escapeHtml(label || `City ${i+1}`)}</div>`;
+    });
+    headerHtml += '</div>';
+  }
 
   const metrics = [
-    { key: 'minT', label: 'Min temp', format: formatTemp },
-    { key: 'maxT', label: 'Max temp', format: formatTemp },
-    { key: 'avgT', label: 'Avg temp', format: formatTemp },
-    { key: 'climateDev', label: 'Climate dev', format: formatDeviation },
-    { key: 'precipTotal', label: 'Total precip', format: formatPrecip },
-    { key: 'precipMax', label: 'Max daily', format: formatPrecip },
-    { key: 'precipDays', label: 'Days >0.1mm', format: v => v },
-    { key: 'humAvg', label: 'Avg humidity', format: formatPercent },
-    { key: 'windAvg', label: 'Avg wind', format: formatWind },
-    { key: 'windMax', label: 'Max wind', format: formatWind }
+    { key: 'maxT', label: 'Max temp.', format: formatTemp },
+    { key: 'avgT', label: 'Avg temp.', format: formatTemp },
+    { key: 'minT', label: 'Min temp.', format: formatTemp },
+    { key: 'climateDev', label: 'Average temp. dev.', format: formatDeviation },
+    { key: 'precipTotal', label: 'Total precip.', format: formatPrecip },
+    { key: 'precipMax', label: 'Max daily precip.', format: formatPrecip },
+    { key: 'humAvg', label: 'Avg. humidity', format: formatPercent },
+    { key: 'windMax', label: 'Max wind', format: formatWind },
+    { key: 'windAvg', label: 'Avg. wind', format: formatWind },
+    { key: 'precipDays', label: 'Dry days', format: v => v },
+    { key: 'totalDays', label: 'Total days', format: v => v }
   ];
 
   let tableHtml = '';
@@ -260,7 +269,8 @@ export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate =
     tableHtml += '</div>';
   });
 
-  dom.innerHTML = `<div class="stats-header">${headerHtml}</div><div class="stats-table">${tableHtml}</div>`;
+  const headerSection = headerHtml ? `<div class="stats-header">${headerHtml}</div>` : '';
+  dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>`;
 }
 
 function formatTemp(value) {
@@ -547,8 +557,7 @@ function resetAll() {
 
 function formatCityLabel(city) {
   if (!city) return '';
-  const parts = [city.name, city.admin1, city.country].filter(Boolean);
-  return parts.join(', ');
+  return city.name;
 }
 
 function autoApplyOnLoad() {
