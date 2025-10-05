@@ -785,6 +785,11 @@ input[type="date"]::-webkit-datetime-edit-text {
   gap: 1.5rem;
 }
 
+#toast-progress {
+  bottom: 5.5rem;
+  z-index: 10001;
+}
+
 .toast-cancel {
   background: none;
   border: none;

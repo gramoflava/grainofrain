@@ -22,11 +22,33 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     axisLine: { lineStyle: { color: '#CFD8DC' } }
   };
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
-  const tooltip = { trigger: 'axis', valueFormatter: valueFmt };
+  const tooltip = {
+    trigger: 'axis',
+    valueFormatter: valueFmt,
+    backgroundColor: 'var(--bg-card)',
+    borderColor: 'var(--border-color)',
+    textStyle: { color: 'var(--text-primary)' }
+  };
 
   const tempSeries = [
     {
-      name: 'Temp Min',
+      name: 'T↑',
+      type: 'line',
+      data: series.tempMax,
+      symbol: 'none',
+      lineStyle: { color: '#64B5F6', width: 0 },
+      tooltip: { valueFormatter: valueFmt }
+    },
+    {
+      name: 'T~',
+      type: 'line',
+      data: series.tempMean,
+      symbol: 'none',
+      lineStyle: { color: '#0D47A1', width: 2 },
+      tooltip: { valueFormatter: valueFmt }
+    },
+    {
+      name: 'T↓',
       type: 'line',
       data: series.tempMin,
       symbol: 'none',
@@ -44,32 +66,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
       showSymbol: false,
       lineStyle: { width: 0 },
       areaStyle: { color: color, opacity: 0.18 },
-      tooltip: { valueFormatter: valueFmt }
-    },
-    {
-      name: 'Temp Max',
-      type: 'line',
-      data: series.tempMax,
-      symbol: 'none',
-      lineStyle: { color: '#64B5F6', width: 0 },
-      tooltip: { valueFormatter: valueFmt }
-    },
-    {
-      name: 'Temp Mean',
-      type: 'line',
-      data: series.tempMean,
-      symbol: 'none',
-      lineStyle: { color: '#0D47A1', width: 2 },
-      tooltip: { valueFormatter: valueFmt }
-    },
-    {
-      name: 'Wind',
-      type: 'bar',
-      data: windSeries,
-      yAxisIndex: 1,
-      barWidth: '55%',
-      itemStyle: { color: '#8E24AA99' },
-      tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} km/h` : value) }
+      tooltip: { show: false }
     }
   ];
 
@@ -83,6 +80,16 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
       tooltip: { valueFormatter: valueFmt }
     });
   }
+
+  tempSeries.push({
+    name: 'Wind↑',
+    type: 'bar',
+    data: windSeries,
+    yAxisIndex: 1,
+    barWidth: '55%',
+    itemStyle: { color: '#8E24AA99' },
+    tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} km/h` : value) }
+  });
 
   ch.temp.setOption({
     animation: false,
@@ -137,7 +144,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     ],
     series: [
       {
-        name: 'Precipitation',
+        name: '∑ Rain',
         type: 'bar',
         data: series.precip,
         itemStyle: { color: `${color}CC` },
@@ -145,7 +152,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
         tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} mm` : value) }
       },
       {
-        name: 'Humidity',
+        name: 'RH%',
         type: 'line',
         data: series.humidity,
         yAxisIndex: 1,
@@ -173,11 +180,18 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true })
     axisLine: { lineStyle: { color: '#CFD8DC' } }
   };
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
-  const tooltip = { trigger: 'axis', valueFormatter: valueFmt };
+  const tooltip = {
+    trigger: 'axis',
+    valueFormatter: valueFmt,
+    backgroundColor: 'var(--bg-card)',
+    borderColor: 'var(--border-color)',
+    textStyle: { color: 'var(--text-primary)' }
+  };
 
   const tempSeries = [];
   const hydroSeries = [];
 
+  // First pass: add temperature and climate norm series
   allSeries.forEach((series, idx) => {
     if (!series || idx >= colors.length) return;
 
@@ -186,49 +200,22 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true })
 
     // Temperature mean line
     tempSeries.push({
-      name: `Temp Mean ${cityNum}`,
+      name: `T~ ${cityNum}`,
       type: 'line',
       data: series.tempMean,
       symbol: 'none',
       lineStyle: { color: color, width: 2 },
       tooltip: { valueFormatter: valueFmt }
     });
+  });
 
-    // Wind bars (overlapping)
-    const windSeries = (series.windMax && series.windMax.length) ? series.windMax : series.wind;
-    tempSeries.push({
-      name: `Wind ${cityNum}`,
-      type: 'bar',
-      data: windSeries,
-      yAxisIndex: 1,
-      barWidth: '55%',
-      itemStyle: { color: `${color}99` },
-      tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} km/h` : value) }
-    });
+  // Second pass: add climate norms
+  allSeries.forEach((series, idx) => {
+    if (!series || idx >= colors.length) return;
 
-    // Precipitation bars (overlapping)
-    hydroSeries.push({
-      name: `Precipitation ${cityNum}`,
-      type: 'bar',
-      data: series.precip,
-      itemStyle: { color: `${color}CC` },
-      barWidth: '55%',
-      tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} mm` : value) }
-    });
+    const color = colors[idx];
+    const cityNum = idx + 1;
 
-    // Humidity area (overlapping)
-    hydroSeries.push({
-      name: `Humidity ${cityNum}`,
-      type: 'line',
-      data: series.humidity,
-      yAxisIndex: 1,
-      showSymbol: false,
-      lineStyle: { color: color, width: 1 },
-      areaStyle: { color: color, opacity: 0.15 },
-      tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} %` : value) }
-    });
-
-    // Climate norm if available
     if (series.norm && prefs.showNormals) {
       tempSeries.push({
         name: `Climate Norm ${cityNum}`,
@@ -239,6 +226,55 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true })
         tooltip: { valueFormatter: valueFmt }
       });
     }
+  });
+
+  // Third pass: add wind series
+  allSeries.forEach((series, idx) => {
+    if (!series || idx >= colors.length) return;
+
+    const color = colors[idx];
+    const cityNum = idx + 1;
+
+    const windSeries = (series.windMax && series.windMax.length) ? series.windMax : series.wind;
+    tempSeries.push({
+      name: `Wind↑ ${cityNum}`,
+      type: 'bar',
+      data: windSeries,
+      yAxisIndex: 1,
+      barWidth: '55%',
+      itemStyle: { color: `${color}99` },
+      tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} km/h` : value) }
+    });
+  });
+
+  // Hydro series: precipitation and humidity
+  allSeries.forEach((series, idx) => {
+    if (!series || idx >= colors.length) return;
+
+    const color = colors[idx];
+    const cityNum = idx + 1;
+
+    // Precipitation bars (overlapping)
+    hydroSeries.push({
+      name: `∑ Rain ${cityNum}`,
+      type: 'bar',
+      data: series.precip,
+      itemStyle: { color: `${color}CC` },
+      barWidth: '55%',
+      tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} mm` : value) }
+    });
+
+    // Humidity area (overlapping)
+    hydroSeries.push({
+      name: `RH% ${cityNum}`,
+      type: 'line',
+      data: series.humidity,
+      yAxisIndex: 1,
+      showSymbol: false,
+      lineStyle: { color: color, width: 1 },
+      areaStyle: { color: color, opacity: 0.15 },
+      tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} %` : value) }
+    });
   });
 
   ch.temp.setOption({
