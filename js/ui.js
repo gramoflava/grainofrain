@@ -121,6 +121,8 @@ async function applyComparison() {
   const paddedStart = addDays(startIso, -padding);
   const paddedEnd = addDays(endIso, padding);
 
+  let loadingToast = null;
+
   try {
     abortController = new AbortController();
     const signal = abortController.signal;
@@ -129,7 +131,15 @@ async function applyComparison() {
     const allSeries = [];
     const allStats = [];
 
+    // Create progress toast for multiple cities
+    if (selectedCities.length > 1) {
+      loadingToast = createProgressToast();
+    }
+
     for (let i = 0; i < selectedCities.length; i++) {
+      if (selectedCities.length > 1) {
+        updateProgressToast(loadingToast, `Loading ${i + 1}/${selectedCities.length}...`);
+      }
       if (signal.aborted) throw new Error('Cancelled');
 
       const geo = selectedCities[i];
@@ -179,12 +189,15 @@ async function applyComparison() {
       fillStats(statsDom, allStats, labels, startIso, endIso);
     }
 
+    if (loadingToast) removeProgressToast(loadingToast);
+
     showDataView();
     state.entities = entities;
     state.date = { start: startIso, end: endIso, endIsToday };
     saveState(state);
   } catch (e) {
     console.error(e);
+    if (loadingToast) removeProgressToast(loadingToast);
     if (e.message !== 'Cancelled') {
       showMessage(e.message || 'An error occurred', 'error');
     }
@@ -355,6 +368,8 @@ async function applyPeriodic() {
   const smoothing = state.prefs.smoothing || 0;
   const padding = Math.floor(smoothing / 2);
 
+  let loadingToast = null;
+
   try {
     abortController = new AbortController();
     const signal = abortController.signal;
@@ -363,7 +378,15 @@ async function applyPeriodic() {
     const allStats = [];
     const labels = [];
 
+    // Create progress toast for multiple years
+    if (selectedYears.length > 1) {
+      loadingToast = createProgressToast();
+    }
+
     for (let i = 0; i < selectedYears.length; i++) {
+      if (selectedYears.length > 1) {
+        updateProgressToast(loadingToast, `Loading ${i + 1}/${selectedYears.length}...`);
+      }
       if (signal.aborted) throw new Error('Cancelled');
 
       const year = selectedYears[i];
@@ -408,6 +431,8 @@ async function applyPeriodic() {
 
     fillStatsPeriodic(statsDom, allStats, labels, periodicCity.name, periodStart, periodEnd);
 
+    if (loadingToast) removeProgressToast(loadingToast);
+
     showDataView();
     state.periodic = {
       city: periodicCity,
@@ -418,6 +443,7 @@ async function applyPeriodic() {
     saveState(state);
   } catch (e) {
     console.error(e);
+    if (loadingToast) removeProgressToast(loadingToast);
     if (e.message !== 'Cancelled') {
       showMessage(e.message || 'An error occurred', 'error');
     }
@@ -463,12 +489,29 @@ function switchMode(mode) {
   periodicControls.classList.add('hidden');
   progressionControls.classList.add('hidden');
 
+  // Hide data view when switching modes
+  workspaceDom.classList.add('no-data');
+  hasData = false;
+  updateExportButtons();
+
   if (mode === 'comparison') {
     comparisonControls.classList.remove('hidden');
+    // Auto-load data if settings are available
+    if (selectedCities.length > 0 && startInput.value && endInput.value) {
+      applyComparison();
+    }
   } else if (mode === 'periodic') {
     periodicControls.classList.remove('hidden');
+    // Auto-load data if settings are available
+    if (periodicCity && selectedYears.length > 0) {
+      applyPeriodic();
+    }
   } else if (mode === 'progression') {
     progressionControls.classList.remove('hidden');
+    // Auto-load data if settings are available
+    if (progressionCity && yearFromInput.value && yearToInput.value) {
+      applyProgression();
+    }
   }
 }
 

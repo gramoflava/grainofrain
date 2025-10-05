@@ -116,7 +116,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
       }
     ],
     series: tempSeries
-  });
+  }, { notMerge: true });
 
   ch.hydro.setOption({
     animation: false,
@@ -162,7 +162,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
         tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} %` : value) }
       }
     ]
-  });
+  }, { notMerge: true });
 }
 
 export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true }) {
@@ -302,7 +302,7 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true })
       }
     ],
     series: tempSeries
-  });
+  }, { notMerge: true });
 
   ch.hydro.setOption({
     animation: false,
@@ -329,7 +329,7 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true })
       }
     ],
     series: hydroSeries
-  });
+  }, { notMerge: true });
 }
 
 function isFiniteNumber(value) {
