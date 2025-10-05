@@ -303,7 +303,7 @@ export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate =
     headerHtml += `<div class="stats-label"></div>`;
     cityLabels.forEach((label, i) => {
       const colorClass = `color-${COLOR_NAMES[i]}`;
-      headerHtml += `<div class="stats-value ${colorClass}">${escapeHtml(label || `City ${i+1}`)}</div>`;
+      headerHtml += `<div class="stats-value"><span class="${colorClass}">${escapeHtml(label || `City ${i+1}`)}</span></div>`;
     });
     headerHtml += '</div>';
   }
@@ -327,8 +327,7 @@ export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate =
     tableHtml += `<div class="stats-row" style="grid-template-columns: auto repeat(${numCities}, 1fr);">`;
     tableHtml += `<div class="stats-label" title="${metric.tooltip}">${metric.label}</div>`;
     statsArray.forEach((stats, i) => {
-      const colorClass = `color-${COLOR_NAMES[i]}`;
-      tableHtml += `<div class="stats-value ${colorClass}">${metric.format(stats[metric.key])}</div>`;
+      tableHtml += `<div class="stats-value">${metric.format(stats[metric.key])}</div>`;
     });
     tableHtml += '</div>';
   });
@@ -364,18 +363,22 @@ function isFiniteNumber(value) {
 }
 
 function buildFilename() {
-  const today = isoToday();
   const mode = state.mode || 'single';
   let baseName = 'grainofrain';
 
   if (mode === 'single' && state.entities.length > 0) {
     const city = state.entities[0].label;
     baseName = city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'grainofrain';
-  } else if (mode === 'compare') {
-    baseName = 'compare';
+  } else if (mode === 'compare' && state.entities.length > 0) {
+    const cities = state.entities.map(e => e.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')).join('-');
+    baseName = cities || 'compare';
   }
 
-  return `${baseName}-${today}.png`;
+  const startDate = state.date?.start || '';
+  const endDate = state.date?.end || '';
+  const dateRange = (startDate && endDate) ? `${startDate}-${endDate}` : (startDate || isoToday());
+
+  return `${baseName}-${dateRange}.png`;
 }
 
 function prefillInputs() {

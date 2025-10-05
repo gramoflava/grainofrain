@@ -297,10 +297,9 @@ main.container-fluid {
 /* City Tags Container */
 .city-tags-container {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  flex: 1;
+  flex: 0 1 auto;
   margin-right: 0.5rem;
   min-width: 0;
 }
@@ -308,7 +307,6 @@ main.container-fluid {
 .city-tags {
   display: flex;
   gap: 0.35rem;
-  flex-wrap: wrap;
   align-items: center;
 }
 
@@ -359,8 +357,8 @@ main.container-fluid {
 
 .city-input-wrapper {
   position: relative;
-  flex: 1;
-  min-width: 120px;
+  flex: 0 0 auto;
+  width: 145px;
 }
 
 .city-search-input {
@@ -550,18 +548,49 @@ input[type="date"]::-webkit-datetime-edit-text {
   background: transparent !important;
   color: var(--text-secondary) !important;
   border-radius: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.icon-btn img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) saturate(100%) invert(51%) sepia(11%) saturate(626%) hue-rotate(155deg) brightness(91%) contrast(87%);
 }
 
 .icon-btn:hover {
   background: var(--bg-hover) !important;
 }
 
-.icon-btn.danger {
-  color: #c62828 !important;
+.icon-btn:hover img {
+  filter: brightness(0) saturate(100%) invert(28%) sepia(10%) saturate(1150%) hue-rotate(155deg) brightness(96%) contrast(91%);
+}
+
+.icon-btn.danger img {
+  filter: brightness(0) saturate(100%) invert(20%) sepia(83%) saturate(2683%) hue-rotate(347deg) brightness(87%) contrast(90%);
 }
 
 .icon-btn.danger:hover {
   background: #ffebee !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .icon-btn img {
+    filter: brightness(0) saturate(100%) invert(77%) sepia(0%) saturate(1114%) hue-rotate(155deg) brightness(91%) contrast(87%);
+  }
+
+  .icon-btn:hover img {
+    filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
+  }
+
+  .icon-btn.danger img {
+    filter: brightness(0) saturate(100%) invert(37%) sepia(73%) saturate(2683%) hue-rotate(347deg) brightness(95%) contrast(90%);
+  }
+
+  .icon-btn.danger:hover {
+    background: rgba(198, 40, 40, 0.15) !important;
+  }
 }
 
 .sr-only {

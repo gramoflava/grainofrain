@@ -40,9 +40,15 @@
           <div class="spacer"></div>
 
           <div class="action-buttons">
-            <button id="copy" type="button" class="icon-btn" title="Copy charts">📋</button>
-            <button id="download" type="button" class="icon-btn" title="Download charts">💾</button>
-            <button id="reset" type="button" class="icon-btn danger" title="Reset app">♻️</button>
+            <button id="copy" type="button" class="icon-btn" title="Copy charts">
+              <img src="icons/copy.svg" alt="Copy" width="20" height="20">
+            </button>
+            <button id="download" type="button" class="icon-btn" title="Download charts">
+              <img src="icons/download.svg" alt="Download" width="20" height="20">
+            </button>
+            <button id="reset" type="button" class="icon-btn danger" title="Reset app">
+              <img src="icons/reset.svg" alt="Reset" width="20" height="20">
+            </button>
           </div>
 
           <button id="apply" type="submit" class="primary">Apply</button>
@@ -65,6 +71,10 @@
         <section id="stats" aria-live="polite"></section>
       </aside>
     </div>
+
+    <footer style="text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+      This is a pure vibe-coded app, <a href="about.html" style="color: var(--text-secondary); text-decoration: none; border-bottom: 1px dotted var(--text-muted);">read more here</a>
+    </footer>
   </main>
 </body>
 </html>
