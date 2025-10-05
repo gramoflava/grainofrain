@@ -865,6 +865,74 @@ input[type="date"]::-webkit-datetime-edit-text {
   }
 }
 
+/* Ko-fi Widget */
+.kofi-floater {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  background: var(--bg-card);
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 9999;
+}
+
+.kofi-floater:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.kofi-floater img {
+  width: 32px;
+  height: 32px;
+  filter: brightness(0) saturate(100%) invert(51%) sepia(11%) saturate(626%) hue-rotate(155deg) brightness(91%) contrast(87%);
+  transition: filter 0.2s ease;
+}
+
+.kofi-floater:hover img {
+  filter: brightness(0) saturate(100%) invert(28%) sepia(10%) saturate(1150%) hue-rotate(155deg) brightness(96%) contrast(91%);
+}
+
+.kofi-floater.hidden {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .kofi-floater img {
+    filter: brightness(0) saturate(100%) invert(77%) sepia(0%) saturate(1114%) hue-rotate(155deg) brightness(91%) contrast(87%);
+  }
+
+  .kofi-floater:hover img {
+    filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
+  }
+}
+
+.kofi-panel {
+  position: fixed;
+  bottom: 52px;
+  right: 52px;
+  width: 400px;
+  height: 660px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+  background: transparent;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 9998;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.kofi-panel.hidden {
+  display: none;
+}
+
 @media (max-width: 640px) {
   #config-bar {
     padding: 0.4rem 0.5rem;
@@ -911,5 +979,25 @@ input[type="date"]::-webkit-datetime-edit-text {
 
   .toast.visible {
     transform: translateX(0) translateY(0);
+  }
+
+  .kofi-floater {
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .kofi-floater img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .kofi-panel {
+    bottom: 40px;
+    right: 40px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    height: auto;
   }
 }

@@ -184,5 +184,36 @@
       This is a pure vibe-coded app, <a href="about.html" style="color: var(--text-secondary); text-decoration: none; border-bottom: 1px dotted var(--text-muted);">read more here</a>
     </footer>
   </main>
+
+  <!-- Ko-fi Donation Widget -->
+  <div id="kofi-floater" class="kofi-floater">
+    <img src="icons/coffee.svg" alt="Support" width="32" height="32">
+  </div>
+
+  <div id="kofi-panel" class="kofi-panel hidden">
+    <iframe id='kofiframe' src='https://ko-fi.com/gramoflava/?hidefeed=true&widget=true&embed=true&preview=true' style='border:none;width:100%;padding:0;background:transparent;' height='660' title='gramoflava'></iframe>
+  </div>
+
+  <div id="kofi-close" class="kofi-floater hidden">
+    <img src="icons/circle-x.svg" alt="Close" width="32" height="32">
+  </div>
+
+  <script>
+    const floater = document.getElementById('kofi-floater');
+    const panel = document.getElementById('kofi-panel');
+    const closeBtn = document.getElementById('kofi-close');
+
+    floater.addEventListener('click', () => {
+      floater.classList.add('hidden');
+      closeBtn.classList.remove('hidden');
+      panel.classList.remove('hidden');
+    });
+
+    closeBtn.addEventListener('click', () => {
+      panel.classList.add('hidden');
+      closeBtn.classList.add('hidden');
+      floater.classList.remove('hidden');
+    });
+  </script>
 </body>
 </html>
