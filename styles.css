@@ -1,3 +1,10 @@
+/* CSS Reset & Normalization */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 :root {
   --card-radius: 8px;
   --bg-primary: #f7f8fb;
@@ -9,6 +16,7 @@
   --text-muted: #90a4ae;
   --bg-hover: #eceff1;
   --bg-alt: #fafafa;
+  --input-bg: #fff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +30,13 @@
     --text-muted: #808080;
     --bg-hover: #353535;
     --bg-alt: #252525;
+    --input-bg: #1f1f1f;
   }
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html,
@@ -38,9 +52,35 @@ body {
   flex-direction: column;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Form elements reset */
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
   margin: 0;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
   padding: 0;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: var(--date-picker-filter, none);
+}
+
+@media (prefers-color-scheme: dark) {
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
 }
 
 main.container-fluid {
@@ -78,9 +118,6 @@ main.container-fluid {
   margin: 0;
 }
 
-section {
-  margin: 0 !important;
-}
 
 .chart-card {
   flex: 1;
@@ -102,9 +139,9 @@ section {
 }
 
 .chart-card header {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.35rem 0.65rem;
+  padding: 0.4rem 0.7rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -127,20 +164,20 @@ section {
 #stats {
   background: var(--bg-card);
   border-radius: var(--card-radius);
-  padding: 0.5rem;
+  padding: 0.6rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 0;
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   overflow: hidden;
 }
 
 #stats .stats-title {
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   color: var(--text-primary);
-  padding: 0.35rem;
+  padding: 0.4rem;
   text-align: center;
   border-bottom: 2px solid var(--border-color);
   background: var(--bg-alt);
@@ -152,8 +189,8 @@ section {
 
 #stats .stats-header-row {
   display: grid;
-  gap: 0.4rem;
-  padding: 0.3rem 0.35rem;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
   border-bottom: 1px solid var(--border-light);
 }
 
@@ -167,11 +204,11 @@ section {
 
 #stats .stats-header-row:first-child .stats-value {
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.85rem;
 }
 
 #stats .stats-header-row:last-child .stats-value {
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
@@ -182,8 +219,8 @@ section {
 
 #stats .stats-row {
   display: grid;
-  gap: 0.4rem;
-  padding: 0.3rem 0.35rem;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
   align-items: center;
   border-bottom: 1px solid var(--border-light);
 }
@@ -199,15 +236,15 @@ section {
 #stats .stats-label {
   font-weight: 500;
   color: var(--text-secondary);
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   text-align: left;
-  padding-right: 0.4rem;
+  padding-right: 0.5rem;
 }
 
 #stats .stats-value {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   text-align: right;
 }
 
@@ -226,11 +263,6 @@ section {
 #controls {
   display: flex;
   flex-direction: row;
-  margin: 0;
-}
-
-form {
-  margin: 0;
 }
 
 .controls-row {
@@ -270,13 +302,13 @@ form {
 }
 
 .city-action-btn {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
   padding: 0;
   border: none;
   border-radius: 6px;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
@@ -311,15 +343,33 @@ form {
 }
 
 #controls input {
-  padding: 0.25rem 0.45rem;
-  font-size: 0.7rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
   border-radius: 6px;
   border: 1px solid var(--border-color);
-  background: var(--bg-card);
+  background: var(--input-bg);
   color: var(--text-primary);
   min-width: 0;
-  height: 26px;
-  box-sizing: border-box;
+  height: 30px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#controls input:hover {
+  border-color: #1e88e5;
+}
+
+#controls input:focus {
+  outline: none;
+  border-color: #1e88e5;
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+  padding: 0 0.2em;
 }
 
 .city-input {
@@ -370,33 +420,33 @@ form {
 .city-name {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.8rem;
-  margin-bottom: 0.12rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.15rem;
 }
 
 .city-meta {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  margin-bottom: 0.08rem;
+  margin-bottom: 0.1rem;
 }
 
 .city-coords {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   font-family: 'Courier New', monospace;
 }
 
 #controls button {
   padding: 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
   border-radius: 6px;
   font-weight: 600;
   border: none;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  height: 26px;
-  min-width: 26px;
+  height: 30px;
+  min-width: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -405,8 +455,8 @@ form {
 #controls .primary {
   background: #1e88e5;
   color: #fff;
-  padding: 0 0.8rem;
-  font-size: 0.7rem;
+  padding: 0 1rem;
+  font-size: 0.85rem;
   min-width: auto;
 }
 
@@ -439,11 +489,11 @@ form {
 }
 
 .icon-btn {
-  width: 22px !important;
-  height: 22px !important;
-  min-width: 22px !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
   padding: 0 !important;
-  font-size: 0.8rem !important;
+  font-size: 0.95rem !important;
   background: transparent !important;
   color: var(--text-secondary) !important;
   border-radius: 4px !important;
