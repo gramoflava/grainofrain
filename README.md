@@ -32,16 +32,20 @@ A client-side weather data analysis tool for exploring historical and current we
 ### Overview Mode
 - Analyze 1-3 cities simultaneously over a custom date range
 - Compare weather patterns across different locations
+- Optional data smoothing (5 or 14 days) for clearer trends
 - Perfect for travel planning and location comparison
 
 ### Periodic Mode
 - Compare the same time period across different years (e.g., summer 2015 vs. 2020 vs. 2025)
 - Visualize climate change and seasonal shifts over time
 - Track how specific periods have evolved in a single location
+- Optional data smoothing for trend analysis
 
-### Progression Mode (Coming Soon)
-- Year-over-year progression analysis
+### Progression Mode
+- Study how a specific day, month, or season has changed over decades
+- Year-over-year progression analysis (e.g., how January 4th changed from 1984 to 2025)
 - Long-term climate trend visualization
+- Aggregated data across multi-year ranges
 
 ## Value Proposition
 
