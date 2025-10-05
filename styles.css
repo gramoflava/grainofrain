@@ -574,6 +574,15 @@ input[type="date"]::-webkit-datetime-edit-text {
   flex-shrink: 0;
 }
 
+/* Progression period config container */
+#period-config-container {
+  display: contents;
+}
+
+#controls-progression .city-input-wrapper {
+  width: 180px;
+}
+
 .city-dropdown {
   display: none;
   position: absolute;

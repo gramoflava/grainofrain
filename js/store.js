@@ -12,6 +12,12 @@ export function defaultState() {
       periodStart: '',
       periodEnd: ''
     },
+    progression: {
+      city: null,
+      periodConfig: null,
+      yearFrom: null,
+      yearTo: null
+    },
     prefs: { showNormals: true, showAllBands: false, showGrid: true },
     lastCityLabel: ''
   };
@@ -52,6 +58,13 @@ function normalizeState(state) {
     years: Array.isArray(incomingPeriodic.years) ? incomingPeriodic.years : base.periodic.years
   };
 
+  // Normalize progression config
+  const incomingProgression = state && state.progression ? state.progression : {};
+  const normalizedProgression = {
+    ...base.progression,
+    ...incomingProgression
+  };
+
   // Migrate old 'single' mode to 'comparison'
   let mode = state?.mode || base.mode;
   if (mode === 'single') mode = 'comparison';
@@ -62,6 +75,7 @@ function normalizeState(state) {
     mode,
     date: normalizedDate,
     periodic: normalizedPeriodic,
+    progression: normalizedProgression,
     prefs: { ...base.prefs, ...(state && state.prefs ? state.prefs : {}) },
     entities: Array.isArray(state?.entities) ? state.entities : base.entities,
     lastCityLabel: typeof state?.lastCityLabel === 'string' ? state.lastCityLabel : base.lastCityLabel

@@ -17,6 +17,7 @@ let hasData = false;
 const modeSelector = document.getElementById('mode-selector');
 const comparisonControls = document.getElementById('controls-comparison');
 const periodicControls = document.getElementById('controls-periodic');
+const progressionControls = document.getElementById('controls-progression');
 
 const startInput = document.getElementById('start');
 const endInput = document.getElementById('end');
@@ -34,7 +35,17 @@ const yearTagsContainer = document.getElementById('year-tags');
 const periodStartInput = document.getElementById('period-start');
 const periodEndInput = document.getElementById('period-end');
 
+const progressionCitySearchInput = document.getElementById('progression-city-search');
+const progressionCityDropdown = document.getElementById('progression-city-dropdown');
+const periodTypeSelect = document.getElementById('period-type');
+const seasonSelect = document.getElementById('season-select');
+const monthSelect = document.getElementById('month-select');
+const daySelect = document.getElementById('day-select');
+const yearFromInput = document.getElementById('year-from');
+const yearToInput = document.getElementById('year-to');
+
 let selectedYears = [];
+let progressionCity = null;
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const MM_DD_REGEX = /^\d{2}-\d{2}$/;
@@ -45,9 +56,12 @@ bindControls();
 setupModeSelector();
 setupCityTagSelector();
 setupPeriodicCitySelector();
+setupProgressionCitySelector();
 setupYearTagSelector();
+setupPeriodTypeSelector();
 restoreCityTags();
 restorePeriodicInputs();
+restoreProgressionInputs();
 showNoDataPlaceholder();
 autoApplyOnLoad();
 
@@ -58,6 +72,8 @@ async function apply() {
     await applyComparison();
   } else if (currentMode === 'periodic') {
     await applyPeriodic();
+  } else if (currentMode === 'progression') {
+    await applyProgression();
   }
 }
 
@@ -129,6 +145,11 @@ async function applyComparison() {
       });
       allSeries.push(series);
       allStats.push(stats);
+
+      // Add small delay between city requests
+      if (i < selectedCities.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
     }
 
     if (entities.length === 1) {
@@ -147,6 +168,130 @@ async function applyComparison() {
   } catch (e) {
     console.error(e);
     showMessage(e.message || 'An error occurred', 'error');
+  }
+}
+
+async function applyProgression() {
+  if (!progressionCity) {
+    return showMessage('Select a city', 'error');
+  }
+
+  const yearFrom = parseInt(yearFromInput.value.trim(), 10);
+  const yearTo = parseInt(yearToInput.value.trim(), 10);
+
+  if (isNaN(yearFrom) || isNaN(yearTo)) {
+    return showMessage('Fill year range', 'error');
+  }
+
+  if (yearFrom > yearTo) {
+    return showMessage('From year must be before To year', 'error');
+  }
+
+  const yearRange = yearTo - yearFrom + 1;
+
+  if (yearRange > 50) {
+    return showMessage('Year range too large (max 50 years to avoid rate limits)', 'error');
+  }
+
+  if (yearRange > 20) {
+    showMessage(`Loading ${yearRange} years - this may take a while...`, 'info');
+  }
+
+  const periodType = periodTypeSelect.value;
+  let periodConfig = {};
+
+  if (periodType === 'season') {
+    periodConfig = { type: 'season', value: seasonSelect.value };
+  } else if (periodType === 'month') {
+    periodConfig = { type: 'month', value: monthSelect.value };
+  } else if (periodType === 'day') {
+    const dayValue = daySelect.value.trim();
+    if (!MM_DD_REGEX.test(dayValue)) {
+      return showMessage('Day must use MM-DD format', 'error');
+    }
+    periodConfig = { type: 'day', value: dayValue };
+  } else {
+    periodConfig = { type: 'year' };
+  }
+
+  let loadingToast = null;
+
+  try {
+    const allSeries = [];
+    const allStats = [];
+    const labels = [];
+    const totalYears = yearTo - yearFrom + 1;
+
+    // Create persistent loading toast
+    loadingToast = createProgressToast();
+
+    for (let year = yearFrom; year <= yearTo; year++) {
+      const currentIndex = year - yearFrom + 1;
+      updateProgressToast(loadingToast, `Loading ${year}... (${currentIndex}/${totalYears})`);
+
+      const { startDate, endDate } = getPeriodDates(year, periodConfig);
+
+      const daily = await fetchDaily(progressionCity.lat, progressionCity.lon, startDate, endDate);
+      const hourly = await fetchHourly(progressionCity.lat, progressionCity.lon, startDate, endDate);
+      const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
+      const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
+
+      let normals = null;
+      if (state.prefs.showNormals && year === yearFrom) {
+        // Fetch normals only once
+        try { normals = await fetchNormals(progressionCity.lat, progressionCity.lon); } catch (e) { normals = null; }
+      }
+
+      const series = buildSeries(daily, hum, wind, normals);
+      const stats = computeStats(series);
+
+      allSeries.push(series);
+      allStats.push(stats);
+      labels.push(year.toString());
+
+      // Add delay between requests to avoid rate limiting (300ms)
+      if (year < yearTo) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+
+    // Aggregate stats for progression view
+    const aggregatedStats = aggregateProgressionStats(allStats);
+
+    // For progression, we need to aggregate data points by year
+    const progressionSeries = aggregateSeriesForProgression(allSeries, labels);
+
+    if (labels.length === 1) {
+      renderAll(charts, progressionSeries, COLORS[0], state.prefs);
+    } else {
+      renderAll(charts, progressionSeries, COLORS[0], state.prefs);
+    }
+
+    fillStatsProgression(statsDom, aggregatedStats, progressionCity.name, formatPeriodLabel(periodConfig), yearFrom, yearTo);
+
+    // Remove loading toast
+    removeProgressToast(loadingToast);
+
+    showDataView();
+    showMessage('✓ Data loaded', 'success');
+
+    state.progression = {
+      city: progressionCity,
+      periodConfig,
+      yearFrom,
+      yearTo
+    };
+    saveState(state);
+  } catch (e) {
+    console.error(e);
+    // Remove loading toast on error
+    if (loadingToast) removeProgressToast(loadingToast);
+
+    if (e.message && (e.message.includes('429') || e.message.includes('Too Many Requests'))) {
+      showMessage('Rate limited by API. Please wait a moment and try again with a smaller year range.', 'error');
+    } else {
+      showMessage(e.message || 'An error occurred', 'error');
+    }
   }
 }
 
@@ -186,7 +331,8 @@ async function applyPeriodic() {
       const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
 
       let normals = null;
-      if (state.prefs.showNormals) {
+      if (state.prefs.showNormals && i === 0) {
+        // Fetch normals only once
         try { normals = await fetchNormals(periodicCity.lat, periodicCity.lon); } catch (e) { normals = null; }
       }
 
@@ -196,6 +342,11 @@ async function applyPeriodic() {
       allSeries.push(series);
       allStats.push(stats);
       labels.push(year.toString());
+
+      // Add small delay between requests
+      if (i < selectedYears.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
     }
 
     if (allSeries.length === 1) {
@@ -233,12 +384,16 @@ function setupModeSelector() {
 }
 
 function switchMode(mode) {
+  comparisonControls.classList.add('hidden');
+  periodicControls.classList.add('hidden');
+  progressionControls.classList.add('hidden');
+
   if (mode === 'comparison') {
     comparisonControls.classList.remove('hidden');
-    periodicControls.classList.add('hidden');
   } else if (mode === 'periodic') {
-    comparisonControls.classList.add('hidden');
     periodicControls.classList.remove('hidden');
+  } else if (mode === 'progression') {
+    progressionControls.classList.remove('hidden');
   }
 }
 
@@ -433,6 +588,103 @@ function selectPeriodicCity(city) {
   periodicCityDropdown.classList.remove('visible');
 }
 
+function setupProgressionCitySelector() {
+  progressionCitySearchInput.addEventListener('input', handleProgressionCitySearch);
+  progressionCitySearchInput.addEventListener('focus', () => {
+    if (progressionCitySearchInput.value.trim()) {
+      handleProgressionCitySearch();
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const wrapper = e.target.closest('.city-input-wrapper');
+    const isProgressionWrapper = wrapper && wrapper.closest('#controls-progression');
+    if (!isProgressionWrapper) {
+      progressionCityDropdown.classList.remove('visible');
+    }
+  });
+}
+
+async function handleProgressionCitySearch() {
+  const query = progressionCitySearchInput.value.trim();
+
+  if (query.length < 2) {
+    progressionCityDropdown.classList.remove('visible');
+    return;
+  }
+
+  try {
+    const cities = await suggestCities(query);
+    displayProgressionCitySuggestions(cities);
+  } catch (err) {
+    console.error('City search error:', err);
+    progressionCityDropdown.classList.remove('visible');
+  }
+}
+
+function displayProgressionCitySuggestions(cities) {
+  if (!cities || cities.length === 0) {
+    progressionCityDropdown.classList.remove('visible');
+    return;
+  }
+
+  progressionCityDropdown.innerHTML = cities.map(city => {
+    const label = formatCityLabel(city);
+    cityCache.set(label, city);
+    cityCache.set(city.name, city);
+
+    return `
+      <div class="city-option" data-city-name="${escapeHtml(city.name)}">
+        <div class="city-name">${escapeHtml(city.name)}</div>
+        <div class="city-meta">${escapeHtml([city.admin1, city.country].filter(Boolean).join(', '))}</div>
+        <div class="city-coords">${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°</div>
+      </div>
+    `;
+  }).join('');
+
+  progressionCityDropdown.querySelectorAll('.city-option').forEach(option => {
+    option.addEventListener('click', () => {
+      const cityName = option.getAttribute('data-city-name');
+      const city = cityCache.get(cityName);
+      if (city) {
+        selectProgressionCity(city);
+      }
+    });
+  });
+
+  progressionCityDropdown.classList.add('visible');
+}
+
+function selectProgressionCity(city) {
+  progressionCity = city;
+  progressionCitySearchInput.value = formatCityLabel(city);
+  progressionCityDropdown.classList.remove('visible');
+}
+
+function setupPeriodTypeSelector() {
+  const updatePeriodFields = () => {
+    const periodType = periodTypeSelect.value;
+
+    seasonSelect.style.display = 'none';
+    monthSelect.style.display = 'none';
+    daySelect.style.display = 'none';
+
+    if (periodType === 'season') {
+      seasonSelect.style.display = '';
+    } else if (periodType === 'month') {
+      monthSelect.style.display = '';
+    } else if (periodType === 'day') {
+      daySelect.style.display = '';
+    }
+  };
+
+  periodTypeSelect.addEventListener('change', updatePeriodFields);
+
+  // Initialize on load
+  updatePeriodFields();
+}
+
 function setupYearTagSelector() {
   yearInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -543,6 +795,197 @@ function restorePeriodicInputs() {
   if (state.periodic && state.periodic.periodEnd) {
     periodEndInput.value = state.periodic.periodEnd;
   }
+}
+
+function restoreProgressionInputs() {
+  if (state.progression && state.progression.city) {
+    progressionCity = state.progression.city;
+    progressionCitySearchInput.value = formatCityLabel(progressionCity);
+  }
+  if (state.progression && state.progression.yearFrom) {
+    yearFromInput.value = state.progression.yearFrom;
+  }
+  if (state.progression && state.progression.yearTo) {
+    yearToInput.value = state.progression.yearTo;
+  }
+  if (state.progression && state.progression.periodConfig) {
+    const config = state.progression.periodConfig;
+    periodTypeSelect.value = config.type;
+
+    // Hide all first
+    seasonSelect.style.display = 'none';
+    monthSelect.style.display = 'none';
+    daySelect.style.display = 'none';
+
+    // Show only the relevant one
+    if (config.type === 'season') {
+      seasonSelect.value = config.value;
+      seasonSelect.style.display = '';
+    } else if (config.type === 'month') {
+      monthSelect.value = config.value;
+      monthSelect.style.display = '';
+    } else if (config.type === 'day') {
+      daySelect.value = config.value;
+      daySelect.style.display = '';
+    }
+  }
+}
+
+function getPeriodDates(year, periodConfig) {
+  if (periodConfig.type === 'year') {
+    return {
+      startDate: `${year}-01-01`,
+      endDate: `${year}-12-31`
+    };
+  } else if (periodConfig.type === 'season') {
+    const seasons = {
+      winter: { start: '12-01', end: '02-28' },
+      spring: { start: '03-01', end: '05-31' },
+      summer: { start: '06-01', end: '08-31' },
+      fall: { start: '09-01', end: '11-30' }
+    };
+    const season = seasons[periodConfig.value];
+    // Winter spans two years
+    if (periodConfig.value === 'winter') {
+      return {
+        startDate: `${year - 1}-${season.start}`,
+        endDate: `${year}-${season.end}`
+      };
+    }
+    return {
+      startDate: `${year}-${season.start}`,
+      endDate: `${year}-${season.end}`
+    };
+  } else if (periodConfig.type === 'month') {
+    const month = parseInt(periodConfig.value, 10);
+    const monthStr = month.toString().padStart(2, '0');
+    const daysInMonth = new Date(year, month, 0).getDate();
+    return {
+      startDate: `${year}-${monthStr}-01`,
+      endDate: `${year}-${monthStr}-${daysInMonth}`
+    };
+  } else if (periodConfig.type === 'day') {
+    return {
+      startDate: `${year}-${periodConfig.value}`,
+      endDate: `${year}-${periodConfig.value}`
+    };
+  }
+}
+
+function formatPeriodLabel(periodConfig) {
+  if (periodConfig.type === 'year') {
+    return 'Whole year';
+  } else if (periodConfig.type === 'season') {
+    return periodConfig.value.charAt(0).toUpperCase() + periodConfig.value.slice(1);
+  } else if (periodConfig.type === 'month') {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return months[parseInt(periodConfig.value, 10) - 1];
+  } else if (periodConfig.type === 'day') {
+    return periodConfig.value;
+  }
+}
+
+function aggregateProgressionStats(allStats) {
+  // Calculate aggregates across all years
+  const result = {
+    maxT: Math.max(...allStats.map(s => s.maxT).filter(v => isFiniteNumber(v))),
+    minT: Math.min(...allStats.map(s => s.minT).filter(v => isFiniteNumber(v))),
+    avgT: average(allStats.map(s => s.avgT).filter(v => isFiniteNumber(v))),
+    climateDev: average(allStats.map(s => s.climateDev).filter(v => isFiniteNumber(v))),
+    precipTotal: sum(allStats.map(s => s.precipTotal).filter(v => isFiniteNumber(v))),
+    precipMax: Math.max(...allStats.map(s => s.precipMax).filter(v => isFiniteNumber(v))),
+    humAvg: average(allStats.map(s => s.humAvg).filter(v => isFiniteNumber(v))),
+    windMax: Math.max(...allStats.map(s => s.windMax).filter(v => isFiniteNumber(v))),
+    windAvg: average(allStats.map(s => s.windAvg).filter(v => isFiniteNumber(v))),
+    precipDays: sum(allStats.map(s => s.precipDays).filter(v => typeof v === 'number')),
+    totalDays: sum(allStats.map(s => s.totalDays).filter(v => typeof v === 'number'))
+  };
+  return result;
+}
+
+function aggregateSeriesForProgression(allSeries, yearLabels) {
+  // Aggregate all series into one series with years as X axis
+  const aggregated = {
+    x: yearLabels,
+    tempMax: [],
+    tempMin: [],
+    tempMean: [],
+    precip: [],
+    humidity: [],
+    wind: [],
+    windMax: [],
+    norm: null
+  };
+
+  allSeries.forEach(series => {
+    // For each year's series, take the mean/max/min values
+    aggregated.tempMax.push(arrayMax(series.tempMax));
+    aggregated.tempMin.push(arrayMin(series.tempMin));
+    aggregated.tempMean.push(arrayMean(series.tempMean));
+    aggregated.precip.push(arraySum(series.precip));
+    aggregated.humidity.push(arrayMean(series.humidity));
+    aggregated.wind.push(arrayMean(series.wind));
+    aggregated.windMax.push(arrayMax(series.wind));
+  });
+
+  return aggregated;
+}
+
+function arrayMax(arr) {
+  const filtered = arr.filter(v => isFiniteNumber(v));
+  return filtered.length > 0 ? Math.max(...filtered) : null;
+}
+
+function arrayMin(arr) {
+  const filtered = arr.filter(v => isFiniteNumber(v));
+  return filtered.length > 0 ? Math.min(...filtered) : null;
+}
+
+function arrayMean(arr) {
+  const filtered = arr.filter(v => isFiniteNumber(v));
+  return filtered.length > 0 ? average(filtered) : null;
+}
+
+function arraySum(arr) {
+  const filtered = arr.filter(v => isFiniteNumber(v));
+  return filtered.length > 0 ? sum(filtered) : null;
+}
+
+function average(arr) {
+  if (arr.length === 0) return NaN;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function sum(arr) {
+  return arr.reduce((a, b) => a + b, 0);
+}
+
+function fillStatsProgression(dom, stats, cityName, periodLabel, yearFrom, yearTo) {
+  const titleHtml = `<div class="stats-title"><div class="stats-city">${escapeHtml(cityName)}</div><div class="stats-period">${escapeHtml(periodLabel)} · ${yearFrom}–${yearTo}</div></div>`;
+
+  const metrics = [
+    { key: 'maxT', label: 'T↑', tooltip: 'Maximum temperature', format: formatTemp },
+    { key: 'avgT', label: 'T~', tooltip: 'Average temperature', format: formatTemp },
+    { key: 'minT', label: 'T↓', tooltip: 'Minimum temperature', format: formatTemp },
+    { key: 'climateDev', label: 'ΔT', tooltip: 'Temperature deviation from climate norm', format: formatDeviation },
+    { key: 'precipTotal', label: '∑ Rain', tooltip: 'Total precipitation', format: formatPrecip },
+    { key: 'precipMax', label: 'Rain↑', tooltip: 'Maximum daily precipitation', format: formatPrecip },
+    { key: 'humAvg', label: 'RH%', tooltip: 'Average relative humidity', format: formatPercent },
+    { key: 'windMax', label: 'Wind↑', tooltip: 'Maximum wind speed', format: formatWind },
+    { key: 'windAvg', label: 'Wind~', tooltip: 'Average wind speed', format: formatWind },
+    { key: 'precipDays', label: 'Rain days', tooltip: 'Days with precipitation >0.1mm', format: v => v },
+    { key: 'totalDays', label: '∑ Days', tooltip: 'Total days in period', format: v => v }
+  ];
+
+  let tableHtml = '';
+  metrics.forEach(metric => {
+    tableHtml += `<div class="stats-row" style="grid-template-columns: auto 1fr;">`;
+    tableHtml += `<div class="stats-label" title="${metric.tooltip}">${metric.label}</div>`;
+    tableHtml += `<div class="stats-value">${metric.format(stats[metric.key])}</div>`;
+    tableHtml += '</div>';
+  });
+
+  dom.innerHTML = `${titleHtml}<div class="stats-table">${tableHtml}</div>`;
 }
 
 export function bindControls() {
@@ -837,6 +1280,13 @@ function autoApplyOnLoad() {
         apply();
       }, 100);
     }
+  } else if (state.mode === 'progression') {
+    const hasValidState = state.progression?.city && state.progression?.yearFrom && state.progression?.yearTo;
+    if (hasValidState) {
+      setTimeout(() => {
+        apply();
+      }, 100);
+    }
   }
 }
 
@@ -903,6 +1353,34 @@ function showMessage(text, type = 'info') {
     toast.classList.remove('visible');
     setTimeout(() => toast.remove(), 300);
   });
+}
+
+function createProgressToast() {
+  const existing = document.getElementById('toast-progress');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'toast-progress';
+  toast.className = 'toast toast-info';
+  toast.textContent = 'Loading...';
+
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add('visible'), 10);
+
+  return toast;
+}
+
+function updateProgressToast(toast, text) {
+  if (toast) {
+    toast.textContent = text;
+  }
+}
+
+function removeProgressToast(toast) {
+  if (toast) {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  }
 }
 
 function showNoDataPlaceholder() {

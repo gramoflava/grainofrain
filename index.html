@@ -21,7 +21,7 @@
           <select id="mode-selector" aria-label="Analysis mode">
             <option value="comparison">Overview</option>
             <option value="periodic">Periodic</option>
-            <option value="progression" disabled>Progression</option>
+            <option value="progression">Progression</option>
           </select>
 
           <!-- Comparison Mode Controls -->
@@ -82,6 +82,61 @@
 
             <input id="period-start" type="text" placeholder="MM-DD start" pattern="\d{2}-\d{2}" />
             <input id="period-end" type="text" placeholder="MM-DD end" pattern="\d{2}-\d{2}" />
+          </div>
+
+          <!-- Progression Mode Controls -->
+          <div id="controls-progression" class="mode-controls hidden">
+            <div class="city-input-wrapper">
+              <input
+                id="progression-city-search"
+                class="city-search-input"
+                type="search"
+                placeholder="Select city..."
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                aria-autocomplete="list"
+                aria-expanded="false"
+              />
+              <div id="progression-city-dropdown" class="city-dropdown" role="listbox"></div>
+            </div>
+
+            <select id="period-type">
+              <option value="year">Whole year</option>
+              <option value="season">Season</option>
+              <option value="month">Month</option>
+              <option value="day">Specific day</option>
+            </select>
+
+            <div id="period-config-container">
+              <select id="season-select" style="width: 100px; display: none;">
+                <option value="winter">Winter</option>
+                <option value="spring">Spring</option>
+                <option value="summer">Summer</option>
+                <option value="fall">Fall</option>
+              </select>
+
+              <select id="month-select" style="width: 100px; display: none;">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+
+              <input id="day-select" type="text" placeholder="MM-DD" pattern="\d{2}-\d{2}" style="width: 100px; display: none;" />
+            </div>
+
+            <input id="year-from" type="number" placeholder="From year" min="1940" max="2100" style="width: 100px;" />
+            <input id="year-to" type="number" placeholder="To year" min="1940" max="2100" style="width: 100px;" />
           </div>
 
           <div class="spacer"></div>
