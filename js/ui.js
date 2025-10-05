@@ -9,22 +9,23 @@ const COLOR_NAMES = ['blue', 'red', 'green'];
 
 let state = loadState();
 const charts = initCharts();
-const cityCaches = [new Map(), new Map(), new Map()];
+const cityCache = new Map();
+let selectedCities = [];
 
 const startInput = document.getElementById('start');
 const endInput = document.getElementById('end');
 const statsDom = document.getElementById('stats');
-const addCityBtn = document.getElementById('add-city-btn');
+const citySearchInput = document.getElementById('city-search');
+const cityTagsContainer = document.getElementById('city-tags');
+const cityDropdown = document.getElementById('city-dropdown');
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_CITIES = 3;
 
 prefillInputs();
 bindControls();
-setupCityButtons();
-setupCityAutocomplete(0);
-setupCityAutocomplete(1);
-setupCityAutocomplete(2);
-setupPersistenceListeners();
+setupCityTagSelector();
+restoreCityTags();
 autoApplyOnLoad();
 
 async function apply() {
@@ -32,6 +33,10 @@ async function apply() {
   const endValue = endInput.value.trim();
 
   if (!startValue || !endValue) return showMessage('Fill all fields', 'error');
+
+  if (selectedCities.length === 0) {
+    return showMessage('Add at least one city', 'error');
+  }
 
   const startIso = sanitizeDate(startValue);
   if (!startIso) {
@@ -59,32 +64,13 @@ async function apply() {
   endInput.value = endIsToday ? today : endIso;
 
   try {
-    const visibleCities = getVisibleCityCount();
-
     const entities = [];
     const allSeries = [];
     const allStats = [];
 
-    for (let i = 0; i < visibleCities; i++) {
-      const cityInput = document.getElementById(`city-${i}`);
-      const cityValue = cityInput.value.trim();
-
-      if (!cityValue) {
-        if (i === 0) {
-          return showMessage('At least first city is required', 'error');
-        }
-        continue;
-      }
-
-      let geo = cityCaches[i].get(cityValue) || null;
-      if (!geo) {
-        geo = await searchCity(cityValue);
-      }
+    for (let i = 0; i < selectedCities.length; i++) {
+      const geo = selectedCities[i];
       const label = formatCityLabel(geo);
-      cityCaches[i].set(label, geo);
-      cityCaches[i].set(geo.name, geo);
-      cityCaches[i].set(cityValue, geo);
-      cityInput.value = label;
 
       const daily = await fetchDaily(geo.lat, geo.lon, startIso, endIso);
       const hourly = await fetchHourly(geo.lat, geo.lon, startIso, endIso);
@@ -130,55 +116,132 @@ async function apply() {
   }
 }
 
-function setupCityButtons() {
-  // Add city button
-  addCityBtn.addEventListener('click', () => {
-    const visibleCount = getVisibleCityCount();
-    if (visibleCount < 3) {
-      document.querySelector(`[data-city-index="${visibleCount}"]`).style.display = '';
-      updateAddButtonState();
+function setupCityTagSelector() {
+  citySearchInput.addEventListener('input', handleCitySearch);
+  citySearchInput.addEventListener('focus', () => {
+    if (citySearchInput.value.trim()) {
+      handleCitySearch();
     }
   });
 
-  // Remove city buttons
-  document.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const index = parseInt(btn.getAttribute('data-remove-index'), 10);
-      const cityRow = document.querySelector(`[data-city-index="${index}"]`);
-      const cityInput = document.getElementById(`city-${index}`);
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.city-input-wrapper')) {
+      cityDropdown.classList.remove('visible');
+    }
+  });
+}
 
-      // Clear the input and hide the row
-      cityInput.value = '';
-      cityRow.style.display = 'none';
+async function handleCitySearch() {
+  const query = citySearchInput.value.trim();
 
-      // If removing city 2, also hide city 3 and shift its value up if needed
-      if (index === 1) {
-        const city3Row = document.querySelector('[data-city-index="2"]');
-        const city3Input = document.getElementById('city-2');
-        city3Input.value = '';
-        city3Row.style.display = 'none';
+  if (query.length < 2) {
+    cityDropdown.classList.remove('visible');
+    return;
+  }
+
+  try {
+    const cities = await suggestCities(query);
+    displayCitySuggestions(cities);
+  } catch (err) {
+    console.error('City search error:', err);
+    cityDropdown.classList.remove('visible');
+  }
+}
+
+function displayCitySuggestions(cities) {
+  if (!cities || cities.length === 0) {
+    cityDropdown.classList.remove('visible');
+    return;
+  }
+
+  cityDropdown.innerHTML = cities.map(city => {
+    const label = formatCityLabel(city);
+    cityCache.set(label, city);
+    cityCache.set(city.name, city);
+
+    return `
+      <div class="city-option" data-city-name="${escapeHtml(city.name)}">
+        <div class="city-name">${escapeHtml(city.name)}</div>
+        <div class="city-meta">${escapeHtml([city.admin1, city.country].filter(Boolean).join(', '))}</div>
+        <div class="city-coords">${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°</div>
+      </div>
+    `;
+  }).join('');
+
+  cityDropdown.querySelectorAll('.city-option').forEach(option => {
+    option.addEventListener('click', () => {
+      const cityName = option.getAttribute('data-city-name');
+      const city = cityCache.get(cityName);
+      if (city) {
+        addCityTag(city);
       }
-
-      updateAddButtonState();
     });
   });
 
-  updateAddButtonState();
+  cityDropdown.classList.add('visible');
 }
 
-function getVisibleCityCount() {
-  let count = 1; // First city always counts
-  if (document.querySelector('[data-city-index="1"]').style.display !== 'none') count++;
-  if (document.querySelector('[data-city-index="2"]').style.display !== 'none') count++;
-  return count;
+function addCityTag(city) {
+  if (selectedCities.length >= MAX_CITIES) return;
+  if (selectedCities.some(c => c.name === city.name)) return;
+
+  selectedCities.push(city);
+  renderCityTags();
+  updateCitySearchState();
+
+  // Clear search
+  citySearchInput.value = '';
+  cityDropdown.classList.remove('visible');
 }
 
-function updateAddButtonState() {
-  const visibleCount = getVisibleCityCount();
-  if (visibleCount >= 3) {
-    addCityBtn.disabled = true;
+function removeCityTag(index) {
+  selectedCities.splice(index, 1);
+  renderCityTags();
+  updateCitySearchState();
+}
+
+function renderCityTags() {
+  cityTagsContainer.innerHTML = selectedCities.map((city, index) => {
+    const colorClass = `tag-${COLOR_NAMES[index]}`;
+    return `
+      <div class="city-tag ${colorClass}">
+        <span>${escapeHtml(city.name)}</span>
+        <span class="city-tag-remove" data-index="${index}">×</span>
+      </div>
+    `;
+  }).join('');
+
+  // Attach remove listeners
+  cityTagsContainer.querySelectorAll('.city-tag-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const index = parseInt(btn.getAttribute('data-index'), 10);
+      removeCityTag(index);
+    });
+  });
+}
+
+function updateCitySearchState() {
+  if (selectedCities.length >= MAX_CITIES) {
+    citySearchInput.disabled = true;
+    citySearchInput.placeholder = `Maximum ${MAX_CITIES} cities`;
   } else {
-    addCityBtn.disabled = false;
+    citySearchInput.disabled = false;
+    citySearchInput.placeholder = 'Add city...';
+  }
+}
+
+function restoreCityTags() {
+  if (state.entities && state.entities.length > 0) {
+    selectedCities = state.entities.map(e => ({
+      name: e.name,
+      country: e.country,
+      admin1: e.admin1,
+      lat: e.lat,
+      lon: e.lon
+    }));
+    renderCityTags();
+    updateCitySearchState();
   }
 }
 
@@ -224,13 +287,13 @@ export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate =
   const numCities = statsArray.length;
   const isComparison = numCities > 1;
 
-  // Title with period
+  // Title with period and city
   let titleHtml = '';
   if (isComparison) {
-    titleHtml = `<div class="stats-title">${startDate}..${endDate}</div>`;
+    titleHtml = `<div class="stats-title"><div class="stats-period">${startDate} – ${endDate}</div></div>`;
   } else {
     const cityName = cityLabels[0] || 'City';
-    titleHtml = `<div class="stats-title">${escapeHtml(cityName)}, ${startDate}..${endDate}</div>`;
+    titleHtml = `<div class="stats-title"><div class="stats-city">${escapeHtml(cityName)}</div><div class="stats-period">${startDate} – ${endDate}</div></div>`;
   }
 
   // Header row with cities (only for comparison)
@@ -246,22 +309,23 @@ export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate =
   }
 
   const metrics = [
-    { key: 'maxT', label: 'Max temp.', format: formatTemp },
-    { key: 'avgT', label: 'Avg temp.', format: formatTemp },
-    { key: 'minT', label: 'Min temp.', format: formatTemp },
-    { key: 'climateDev', label: 'Average temp. dev.', format: formatDeviation },
-    { key: 'precipTotal', label: 'Total precip.', format: formatPrecip },
-    { key: 'precipMax', label: 'Max daily precip.', format: formatPrecip },
-    { key: 'humAvg', label: 'Avg. humidity', format: formatPercent },
-    { key: 'windMax', label: 'Max wind', format: formatWind },
-    { key: 'windAvg', label: 'Avg. wind', format: formatWind },
-    { key: 'precipDays', label: 'Dry days', format: v => v },
-    { key: 'totalDays', label: 'Total days', format: v => v }
+    { key: 'maxT', label: 'T↑', tooltip: 'Maximum temperature', format: formatTemp },
+    { key: 'avgT', label: 'T~', tooltip: 'Average temperature', format: formatTemp },
+    { key: 'minT', label: 'T↓', tooltip: 'Minimum temperature', format: formatTemp },
+    { key: 'climateDev', label: 'ΔT', tooltip: 'Temperature deviation from climate norm', format: formatDeviation },
+    { key: 'precipTotal', label: '∑ Rain', tooltip: 'Total precipitation', format: formatPrecip },
+    { key: 'precipMax', label: 'Rain↑', tooltip: 'Maximum daily precipitation', format: formatPrecip },
+    { key: 'humAvg', label: 'RH%', tooltip: 'Average relative humidity', format: formatPercent },
+    { key: 'windMax', label: 'Wind↑', tooltip: 'Maximum wind speed', format: formatWind },
+    { key: 'windAvg', label: 'Wind~', tooltip: 'Average wind speed', format: formatWind },
+    { key: 'precipDays', label: 'Rain days', tooltip: 'Days with precipitation >0.1mm', format: v => v },
+    { key: 'totalDays', label: '∑ Days', tooltip: 'Total days in period', format: v => v }
   ];
 
   let tableHtml = '';
   metrics.forEach(metric => {
-    tableHtml += `<div class="stats-row" style="grid-template-columns: auto repeat(${numCities}, 1fr);"><div class="stats-label">${metric.label}</div>`;
+    tableHtml += `<div class="stats-row" style="grid-template-columns: auto repeat(${numCities}, 1fr);">`;
+    tableHtml += `<div class="stats-label" title="${metric.tooltip}">${metric.label}</div>`;
     statsArray.forEach((stats, i) => {
       const colorClass = `color-${COLOR_NAMES[i]}`;
       tableHtml += `<div class="stats-value ${colorClass}">${metric.format(stats[metric.key])}</div>`;
@@ -318,42 +382,6 @@ function prefillInputs() {
   const today = isoToday();
   const jan1 = isoYearStart(today);
 
-  // Restore saved cities
-  let filledCityCount = 0;
-  for (let i = 0; i < 3; i++) {
-    const cityInput = document.getElementById(`city-${i}`);
-    const cityRow = document.querySelector(`[data-city-index="${i}"]`);
-    const savedEntity = state.entities[i];
-
-    if (savedEntity && savedEntity.label) {
-      cityInput.value = savedEntity.label;
-      const cachedGeo = {
-        name: savedEntity.name,
-        country: savedEntity.country,
-        admin1: savedEntity.admin1,
-        lat: savedEntity.lat,
-        lon: savedEntity.lon,
-        label: savedEntity.label
-      };
-      cityCaches[i].set(savedEntity.label, cachedGeo);
-      cityCaches[i].set(savedEntity.name, cachedGeo);
-
-      // Show this city row
-      if (i > 0) {
-        cityRow.style.display = '';
-      }
-      filledCityCount++;
-    } else {
-      cityInput.value = '';
-      if (i > 0) {
-        cityRow.style.display = 'none';
-      }
-    }
-  }
-
-  // Update add button state based on restored cities
-  updateAddButtonState();
-
   const savedDate = state.date || {};
   const start = sanitizeDate(savedDate.start) || jan1;
   const endIsToday = savedDate.endIsToday === true;
@@ -367,142 +395,10 @@ function prefillInputs() {
   saveState(state);
 }
 
-function setupCityAutocomplete(index) {
-  const cityInput = document.getElementById(`city-${index}`);
-  const cityDropdown = document.getElementById(`city-dropdown-${index}`);
-
-  let timer = null;
-  let selectedIndex = -1;
-  let currentMatches = [];
-
-  function closeDropdown() {
-    cityDropdown.innerHTML = '';
-    cityDropdown.classList.remove('visible');
-    cityInput.setAttribute('aria-expanded', 'false');
-    selectedIndex = -1;
-    currentMatches = [];
-  }
-
-  function selectCity(city) {
-    const label = formatCityLabel(city);
-    cityInput.value = label;
-    cityCaches[index].set(label, city);
-    cityCaches[index].set(city.name, city);
-    closeDropdown();
-    cityInput.blur();
-  }
-
-  cityInput.addEventListener('input', () => {
-    const query = cityInput.value.trim();
-    if (timer) clearTimeout(timer);
-    if (!query) {
-      closeDropdown();
-      return;
-    }
-    timer = setTimeout(async () => {
-      if (query.length < 2) {
-        closeDropdown();
-        return;
-      }
-      try {
-        const matches = await suggestCities(query);
-        currentMatches = matches;
-        if (matches.length === 0) {
-          closeDropdown();
-          return;
-        }
-
-        cityDropdown.innerHTML = matches.map((city, idx) => {
-          const label = formatCityLabel(city);
-          cityCaches[index].set(label, city);
-          cityCaches[index].set(city.name, city);
-          const coords = `${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°`;
-          return `
-            <div class="city-option" role="option" data-index="${idx}" tabindex="-1">
-              <div class="city-name">${escapeHtml(city.name)}</div>
-              <div class="city-meta">${escapeHtml([city.admin1, city.country].filter(Boolean).join(', '))}</div>
-              <div class="city-coords">${coords}</div>
-            </div>
-          `;
-        }).join('');
-
-        cityDropdown.classList.add('visible');
-        cityInput.setAttribute('aria-expanded', 'true');
-        selectedIndex = -1;
-
-        const options = cityDropdown.querySelectorAll('.city-option');
-        options.forEach(opt => {
-          opt.addEventListener('click', () => {
-            const idx = parseInt(opt.getAttribute('data-index'), 10);
-            selectCity(currentMatches[idx]);
-          });
-        });
-      } catch (err) {
-        console.warn('City lookup failed', err);
-        closeDropdown();
-      }
-    }, 250);
-  });
-
-  cityInput.addEventListener('keydown', (e) => {
-    const options = cityDropdown.querySelectorAll('.city-option');
-    if (!options.length) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
-      updateSelection(options);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      selectedIndex = Math.max(selectedIndex - 1, -1);
-      updateSelection(options);
-    } else if (e.key === 'Enter' && selectedIndex >= 0) {
-      e.preventDefault();
-      selectCity(currentMatches[selectedIndex]);
-    } else if (e.key === 'Escape') {
-      closeDropdown();
-    }
-  });
-
-  function updateSelection(options) {
-    options.forEach((opt, idx) => {
-      if (idx === selectedIndex) {
-        opt.classList.add('selected');
-        opt.scrollIntoView({ block: 'nearest' });
-      } else {
-        opt.classList.remove('selected');
-      }
-    });
-  }
-
-  document.addEventListener('click', (e) => {
-    if (!cityInput.contains(e.target) && !cityDropdown.contains(e.target)) {
-      closeDropdown();
-    }
-  });
-}
-
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
-}
-
-function setupPersistenceListeners() {
-  for (let i = 0; i < 3; i++) {
-    const cityInput = document.getElementById(`city-${i}`);
-    cityInput.addEventListener('change', () => {
-      const value = cityInput.value.trim();
-      if (!state.entities[i]) {
-        state.entities[i] = {};
-      }
-      state.entities[i].label = value;
-      saveState(state);
-    });
-  }
-
-  startInput.addEventListener('change', () => handleDateChange('start', startInput));
-  endInput.addEventListener('change', () => handleDateChange('end', endInput));
 }
 
 function handleDateChange(field, inputEl) {
@@ -561,10 +457,9 @@ function formatCityLabel(city) {
 }
 
 function autoApplyOnLoad() {
-  const hasCity = document.getElementById('city-0').value.trim().length > 0;
-  const hasValidState = state.entities && state.entities.length > 0;
+  const hasValidState = state.entities && state.entities.length > 0 && selectedCities.length > 0;
 
-  if (hasCity && hasValidState) {
+  if (hasValidState) {
     setTimeout(() => {
       apply();
     }, 100);
