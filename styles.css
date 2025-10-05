@@ -295,6 +295,16 @@ main.container-fluid {
   color: #43A047;
 }
 
+.smoothing-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.5rem 0.6rem;
+  text-align: center;
+  font-style: italic;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-alt);
+}
+
 #controls {
   display: flex;
   flex-direction: row;

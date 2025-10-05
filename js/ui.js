@@ -1228,14 +1228,18 @@ export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate =
     headerHtml += '</div>';
   }
 
+  const smoothing = state.prefs.smoothing || 0;
+  const smoothingActive = smoothing > 0;
+  const asterisk = smoothingActive ? '*' : '';
+
   const metrics = [
     { key: 'maxT', label: 'T↑', tooltip: 'Maximum temperature', format: formatTemp },
-    { key: 'avgT', label: 'T~', tooltip: 'Average temperature', format: formatTemp },
+    { key: 'avgT', label: `T~${asterisk}`, tooltip: 'Average temperature', format: formatTemp },
     { key: 'minT', label: 'T↓', tooltip: 'Minimum temperature', format: formatTemp },
     { key: 'climateDev', label: 'ΔT', tooltip: 'Temperature deviation from climate norm', format: formatDeviation },
     { key: 'precipTotal', label: '∑ Rain', tooltip: 'Total precipitation', format: formatPrecip },
     { key: 'precipMax', label: 'Rain↑', tooltip: 'Maximum daily precipitation', format: formatPrecip },
-    { key: 'humAvg', label: 'RH%', tooltip: 'Average relative humidity', format: formatPercent },
+    { key: 'humAvg', label: `RH%${asterisk}`, tooltip: 'Average relative humidity', format: formatPercent },
     { key: 'windMax', label: 'Wind↑', tooltip: 'Maximum wind speed', format: formatWind },
     { key: 'windAvg', label: 'Wind~', tooltip: 'Average wind speed', format: formatWind },
     { key: 'precipDays', label: 'Rain days', tooltip: 'Days with precipitation >0.1mm', format: v => v },
@@ -1252,8 +1256,9 @@ export function fillStats(dom, statsArray, cityLabels, startDate = '', endDate =
     tableHtml += '</div>';
   });
 
+  const smoothingHint = smoothingActive ? '<div class="smoothing-hint">* Smoothing applied, turn off for exact data</div>' : '';
   const headerSection = headerHtml ? `<div class="stats-header">${headerHtml}</div>` : '';
-  dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>`;
+  dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>${smoothingHint}`;
 }
 
 function fillStatsPeriodic(dom, statsArray, yearLabels, cityName, periodStart, periodEnd) {
@@ -1278,14 +1283,18 @@ function fillStatsPeriodic(dom, statsArray, yearLabels, cityName, periodStart, p
     headerHtml += '</div>';
   }
 
+  const smoothing = state.prefs.smoothing || 0;
+  const smoothingActive = smoothing > 0;
+  const asterisk = smoothingActive ? '*' : '';
+
   const metrics = [
     { key: 'maxT', label: 'T↑', tooltip: 'Maximum temperature', format: formatTemp },
-    { key: 'avgT', label: 'T~', tooltip: 'Average temperature', format: formatTemp },
+    { key: 'avgT', label: `T~${asterisk}`, tooltip: 'Average temperature', format: formatTemp },
     { key: 'minT', label: 'T↓', tooltip: 'Minimum temperature', format: formatTemp },
     { key: 'climateDev', label: 'ΔT', tooltip: 'Temperature deviation from climate norm', format: formatDeviation },
     { key: 'precipTotal', label: '∑ Rain', tooltip: 'Total precipitation', format: formatPrecip },
     { key: 'precipMax', label: 'Rain↑', tooltip: 'Maximum daily precipitation', format: formatPrecip },
-    { key: 'humAvg', label: 'RH%', tooltip: 'Average relative humidity', format: formatPercent },
+    { key: 'humAvg', label: `RH%${asterisk}`, tooltip: 'Average relative humidity', format: formatPercent },
     { key: 'windMax', label: 'Wind↑', tooltip: 'Maximum wind speed', format: formatWind },
     { key: 'windAvg', label: 'Wind~', tooltip: 'Average wind speed', format: formatWind },
     { key: 'precipDays', label: 'Rain days', tooltip: 'Days with precipitation >0.1mm', format: v => v },
@@ -1302,8 +1311,9 @@ function fillStatsPeriodic(dom, statsArray, yearLabels, cityName, periodStart, p
     tableHtml += '</div>';
   });
 
+  const smoothingHint = smoothingActive ? '<div class="smoothing-hint">* Smoothing applied, turn off for exact data</div>' : '';
   const headerSection = headerHtml ? `<div class="stats-header">${headerHtml}</div>` : '';
-  dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>`;
+  dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>${smoothingHint}`;
 }
 
 function formatTemp(value) {

@@ -5,13 +5,16 @@ export function initCharts() {
   return { temp, hydro };
 }
 
-export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: true }) {
+export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: true, smoothing: 0 }) {
   const x = series.x;
   const tempRange = series.tempMax.map((max, i) => (isFiniteNumber(max) && isFiniteNumber(series.tempMin[i]) ? max - series.tempMin[i] : null));
   const windSeries = (series.windMax && series.windMax.length) ? series.windMax : series.wind;
   const windAxisMax = 200;
   const gridTop = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
   const gridBottom = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
+
+  const smoothingActive = (prefs.smoothing || 0) > 0;
+  const asterisk = smoothingActive ? '*' : '';
 
   const baseXAxis = {
     type: 'category',
@@ -40,7 +43,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
       tooltip: { valueFormatter: valueFmt }
     },
     {
-      name: 'T~',
+      name: `T~${asterisk}`,
       type: 'line',
       data: series.tempMean,
       symbol: 'none',
@@ -152,7 +155,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
         tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} mm` : value) }
       },
       {
-        name: 'RH%',
+        name: `RH%${asterisk}`,
         type: 'line',
         data: series.humidity,
         yAxisIndex: 1,
@@ -165,11 +168,14 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
   }, { notMerge: true });
 }
 
-export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true }) {
+export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, smoothing: 0 }) {
   const x = allSeries[0].x;
   const windAxisMax = 200;
   const gridTop = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
   const gridBottom = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
+
+  const smoothingActive = (prefs.smoothing || 0) > 0;
+  const asterisk = smoothingActive ? '*' : '';
 
   const baseXAxis = {
     type: 'category',
@@ -200,7 +206,7 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true })
 
     // Temperature mean line
     tempSeries.push({
-      name: `T~ ${cityNum}`,
+      name: `T~${asterisk} ${cityNum}`,
       type: 'line',
       data: series.tempMean,
       symbol: 'none',
@@ -266,7 +272,7 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true })
 
     // Humidity area (overlapping)
     hydroSeries.push({
-      name: `RH% ${cityNum}`,
+      name: `RH%${asterisk} ${cityNum}`,
       type: 'line',
       data: series.humidity,
       yAxisIndex: 1,
