@@ -22,5 +22,9 @@ export async function copyPngToClipboard(containerId) {
 async function renderCanvas(containerId) {
   const node = document.getElementById(containerId);
   if (!node) return null;
-  return html2canvas(node, { backgroundColor: '#FFFFFF' });
+
+  // Get current background color from computed styles
+  const bgColor = window.getComputedStyle(document.body).backgroundColor;
+
+  return html2canvas(node, { backgroundColor: bgColor });
 }
