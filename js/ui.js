@@ -576,12 +576,11 @@ function displayCitySuggestions(cities) {
   }
 
   cityDropdown.innerHTML = cities.map(city => {
-    const label = formatCityLabel(city);
-    cityCache.set(label, city);
-    cityCache.set(city.name, city);
+    const uniqueKey = getUniqueCityKey(city);
+    cityCache.set(uniqueKey, city);
 
     return `
-      <div class="city-option" data-city-name="${escapeHtml(city.name)}">
+      <div class="city-option" data-city-key="${escapeHtml(uniqueKey)}">
         <div class="city-name">${escapeHtml(city.name)}</div>
         <div class="city-meta">${escapeHtml([city.admin1, city.country].filter(Boolean).join(', '))}</div>
         <div class="city-coords">${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°</div>
@@ -591,8 +590,8 @@ function displayCitySuggestions(cities) {
 
   cityDropdown.querySelectorAll('.city-option').forEach(option => {
     option.addEventListener('click', () => {
-      const cityName = option.getAttribute('data-city-name');
-      const city = cityCache.get(cityName);
+      const cityKey = option.getAttribute('data-city-key');
+      const city = cityCache.get(cityKey);
       if (city) {
         addCityTag(city);
       }
@@ -675,12 +674,11 @@ function displayPeriodicCitySuggestions(cities) {
   }
 
   periodicCityDropdown.innerHTML = cities.map(city => {
-    const label = formatCityLabel(city);
-    cityCache.set(label, city);
-    cityCache.set(city.name, city);
+    const uniqueKey = getUniqueCityKey(city);
+    cityCache.set(uniqueKey, city);
 
     return `
-      <div class="city-option" data-city-name="${escapeHtml(city.name)}">
+      <div class="city-option" data-city-key="${escapeHtml(uniqueKey)}">
         <div class="city-name">${escapeHtml(city.name)}</div>
         <div class="city-meta">${escapeHtml([city.admin1, city.country].filter(Boolean).join(', '))}</div>
         <div class="city-coords">${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°</div>
@@ -690,8 +688,8 @@ function displayPeriodicCitySuggestions(cities) {
 
   periodicCityDropdown.querySelectorAll('.city-option').forEach(option => {
     option.addEventListener('click', () => {
-      const cityName = option.getAttribute('data-city-name');
-      const city = cityCache.get(cityName);
+      const cityKey = option.getAttribute('data-city-key');
+      const city = cityCache.get(cityKey);
       if (city) {
         selectPeriodicCity(city);
       }
@@ -749,12 +747,11 @@ function displayProgressionCitySuggestions(cities) {
   }
 
   progressionCityDropdown.innerHTML = cities.map(city => {
-    const label = formatCityLabel(city);
-    cityCache.set(label, city);
-    cityCache.set(city.name, city);
+    const uniqueKey = getUniqueCityKey(city);
+    cityCache.set(uniqueKey, city);
 
     return `
-      <div class="city-option" data-city-name="${escapeHtml(city.name)}">
+      <div class="city-option" data-city-key="${escapeHtml(uniqueKey)}">
         <div class="city-name">${escapeHtml(city.name)}</div>
         <div class="city-meta">${escapeHtml([city.admin1, city.country].filter(Boolean).join(', '))}</div>
         <div class="city-coords">${city.lat.toFixed(2)}°, ${city.lon.toFixed(2)}°</div>
@@ -764,8 +761,8 @@ function displayProgressionCitySuggestions(cities) {
 
   progressionCityDropdown.querySelectorAll('.city-option').forEach(option => {
     option.addEventListener('click', () => {
-      const cityName = option.getAttribute('data-city-name');
-      const city = cityCache.get(cityName);
+      const cityKey = option.getAttribute('data-city-key');
+      const city = cityCache.get(cityKey);
       if (city) {
         selectProgressionCity(city);
       }
@@ -1449,6 +1446,12 @@ function resetAll() {
 function formatCityLabel(city) {
   if (!city) return '';
   return city.name;
+}
+
+function getUniqueCityKey(city) {
+  if (!city) return '';
+  // Create unique key using ID or combination of name + country + coords
+  return city.id ? `city_${city.id}` : `${city.name}_${city.country}_${city.lat}_${city.lon}`;
 }
 
 async function autoApplyOnLoad() {
