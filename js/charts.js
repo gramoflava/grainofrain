@@ -5,7 +5,7 @@ export function initCharts() {
   return { temp, hydro };
 }
 
-export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: true, smoothing: 0 }) {
+export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: true, smoothing: 0 }, label = '') {
   const x = series.x;
   const tempRange = series.tempMax.map((max, i) => (isFiniteNumber(max) && isFiniteNumber(series.tempMin[i]) ? max - series.tempMin[i] : null));
   const windSeries = (series.windMax && series.windMax.length) ? series.windMax : series.wind;
@@ -32,10 +32,56 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
   const tooltip = {
     trigger: 'axis',
-    valueFormatter: valueFmt,
     backgroundColor: 'var(--bg-card)',
     borderColor: 'var(--border-color)',
-    textStyle: { color: 'var(--text-primary)' }
+    textStyle: { color: 'var(--text-primary)' },
+    formatter: (params) => {
+      if (!params || params.length === 0) return '';
+
+      const date = params[0].axisValue;
+      let html = `<div style="margin-bottom: 4px; font-weight: 500;">${date}</div>`;
+
+      params.forEach(p => {
+        if (!p.seriesName || p.seriesName === 'Temp Range') return; // Skip Temp Range entirely
+
+        const name = p.seriesName;
+        let value = p.value;
+        let unit = '';
+        let markerColor = '';
+
+        // Add units and determine marker color
+        if (name.startsWith('Wind↑')) {
+          unit = ' km/h';
+          markerColor = '#8E24AA';
+        } else if (name.startsWith('RH%')) {
+          unit = ' %';
+          // RH% should not show marker
+        } else if (name.startsWith('∑ Rain')) {
+          unit = ' mm';
+          markerColor = color;
+        } else if (name.startsWith('T~')) {
+          markerColor = '#0D47A1';
+        } else if (name === 'Climate Norm') {
+          // Climate Norm should not show marker
+        }
+
+        // Format value
+        const formattedValue = typeof value === 'number' ? value.toFixed(1) : value;
+
+        // Create marker
+        let marker = '<span style="display: inline-block; width: 10px; margin-right: 5px;"></span>';
+        if (markerColor) {
+          marker = `<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${markerColor}; margin-right: 5px;"></span>`;
+        }
+
+        html += `<div style="display: flex; justify-content: space-between; align-items: center; margin: 2px 0;">
+          <span>${marker}${name}</span>
+          <span style="margin-left: 20px; font-weight: 600;">${formattedValue}${unit}</span>
+        </div>`;
+      });
+
+      return html;
+    }
   };
 
   const tempSeries = [
@@ -186,7 +232,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
   }, { notMerge: true });
 }
 
-export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, smoothing: 0 }) {
+export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, smoothing: 0 }, labels = []) {
   const x = allSeries[0].x;
   const windAxisMax = 200;
   const gridTop = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
@@ -209,12 +255,72 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     axisLine: { lineStyle: { color: '#CFD8DC' } }
   };
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
+
+  // Custom tooltip formatter to show only main series with colored markers
   const tooltip = {
     trigger: 'axis',
-    valueFormatter: valueFmt,
     backgroundColor: 'var(--bg-card)',
     borderColor: 'var(--border-color)',
-    textStyle: { color: 'var(--text-primary)' }
+    textStyle: { color: 'var(--text-primary)' },
+    formatter: (params) => {
+      if (!params || params.length === 0) return '';
+
+      const date = params[0].axisValue;
+      let html = `<div style="margin-bottom: 4px; font-weight: 500;">${date}</div>`;
+
+      // Filter to show only main series
+      const mainSeries = params.filter(p => {
+        const name = p.seriesName;
+        return name.startsWith('T~') || name.startsWith('Wind↑') || name.startsWith('RH%') || name.startsWith('∑ Rain') || name.startsWith('Climate Norm');
+      });
+
+      mainSeries.forEach(p => {
+        const name = p.seriesName;
+        let displayName = name;
+        let value = p.value;
+        let unit = '';
+
+        // Extract city number to get color
+        const cityNumMatch = name.match(/ (\d+)$/);
+        const cityIdx = cityNumMatch ? parseInt(cityNumMatch[1]) - 1 : 0;
+        const cityColor = colors[cityIdx] || colors[0];
+
+        // Replace city number with city label (use word boundary to match only at the end)
+        if (cityNumMatch) {
+          const cityNum = parseInt(cityNumMatch[1]);
+          const label = labels[cityNum - 1];
+          if (label) {
+            displayName = displayName.replace(/ \d+$/, ` ${label}`);
+          }
+        }
+
+        // Add units
+        if (name.startsWith('Wind↑')) {
+          unit = ' km/h';
+        } else if (name.startsWith('RH%')) {
+          unit = ' %';
+        } else if (name.startsWith('∑ Rain')) {
+          unit = ' mm';
+        }
+
+        // Format value
+        const formattedValue = typeof value === 'number' ? value.toFixed(1) : value;
+
+        // Show marker only for T~ and ∑ Rain
+        const showMarker = name.startsWith('T~') || name.startsWith('∑ Rain');
+        let marker = '<span style="display: inline-block; width: 10px; margin-right: 5px;"></span>';
+        if (showMarker) {
+          marker = `<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${cityColor}; margin-right: 5px;"></span>`;
+        }
+
+        html += `<div style="display: flex; justify-content: space-between; align-items: center; margin: 2px 0;">
+          <span>${marker}${displayName}</span>
+          <span style="margin-left: 20px; font-weight: 600;">${formattedValue}${unit}</span>
+        </div>`;
+      });
+
+      return html;
+    }
   };
 
   const tempSeries = [];
@@ -238,24 +344,42 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     });
   });
 
-  // Second pass: add climate norms
-  allSeries.forEach((series, idx) => {
-    if (!series || idx >= colors.length) return;
+  // Second pass: add climate norms (gray color)
+  // Check if all norms are identical (periodic mode with same city)
+  let showSingleNorm = false;
+  if (allSeries.length > 1 && allSeries[0]?.norm && allSeries[1]?.norm) {
+    const firstNorm = JSON.stringify(allSeries[0].norm);
+    showSingleNorm = allSeries.every(s => s?.norm && JSON.stringify(s.norm) === firstNorm);
+  }
 
-    const color = colors[idx];
-    const cityNum = idx + 1;
+  if (showSingleNorm) {
+    // Periodic mode: same city, same norm - show only once
+    tempSeries.push({
+      name: 'Climate Norm',
+      type: 'line',
+      data: allSeries[0].norm,
+      symbol: 'none',
+      lineStyle: { color: '#616161', type: 'dashed', width: 1 },
+      tooltip: { valueFormatter: valueFmt }
+    });
+  } else {
+    // Comparison mode: different cities - show norm for each
+    allSeries.forEach((series, idx) => {
+      if (!series || idx >= colors.length) return;
+      const cityNum = idx + 1;
 
-    if (series.norm && prefs.showNormals) {
-      tempSeries.push({
-        name: `Climate Norm ${cityNum}`,
-        type: 'line',
-        data: series.norm,
-        symbol: 'none',
-        lineStyle: { color: color, type: 'dashed', width: 1 },
-        tooltip: { valueFormatter: valueFmt }
-      });
-    }
-  });
+      if (series.norm && prefs.showNormals) {
+        tempSeries.push({
+          name: `Climate Norm ${cityNum}`,
+          type: 'line',
+          data: series.norm,
+          symbol: 'none',
+          lineStyle: { color: '#616161', type: 'dashed', width: 1 },
+          tooltip: { valueFormatter: valueFmt }
+        });
+      }
+    });
+  }
 
   // Third pass: add wind series
   allSeries.forEach((series, idx) => {

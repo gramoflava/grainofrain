@@ -182,11 +182,11 @@ async function applyComparison() {
     }
 
     if (entities.length === 1) {
-      renderAll(charts, allSeries[0], COLORS[0], state.prefs);
+      renderAll(charts, allSeries[0], COLORS[0], state.prefs, entities[0].label);
       fillStats(statsDom, [allStats[0]], [entities[0].label], startIso, endIso);
     } else {
-      renderCompare(charts, allSeries, COLORS, state.prefs);
       const labels = entities.map(e => e.label);
+      renderCompare(charts, allSeries, COLORS, state.prefs, labels);
       fillStats(statsDom, allStats, labels, startIso, endIso);
     }
 
@@ -260,6 +260,16 @@ async function applyProgression() {
     const allStats = [];
     const labels = [];
     const totalYears = yearTo - yearFrom + 1;
+    let sharedNormals = null;
+
+    // Fetch climate normals once if needed
+    if (state.prefs.showNormals) {
+      try {
+        sharedNormals = await fetchNormals(progressionCity.lat, progressionCity.lon, signal);
+      } catch (e) {
+        sharedNormals = null;
+      }
+    }
 
     // Create persistent loading toast
     loadingToast = createProgressToast();
@@ -277,13 +287,7 @@ async function applyProgression() {
       const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
       const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
 
-      let normals = null;
-      if (state.prefs.showNormals && year === yearFrom) {
-        // Fetch normals only once
-        try { normals = await fetchNormals(progressionCity.lat, progressionCity.lon, signal); } catch (e) { normals = null; }
-      }
-
-      const series = buildSeries(daily, hum, wind, normals);
+      const series = buildSeries(daily, hum, wind, sharedNormals);
       const stats = computeStats(series);
 
       allSeries.push(series);
@@ -302,11 +306,8 @@ async function applyProgression() {
     // For progression, we need to aggregate data points by year
     const progressionSeries = aggregateSeriesForProgression(allSeries, labels);
 
-    if (labels.length === 1) {
-      renderAll(charts, progressionSeries, COLORS[0], state.prefs);
-    } else {
-      renderAll(charts, progressionSeries, COLORS[0], state.prefs);
-    }
+    // Progression always shows aggregated data for one city
+    renderAll(charts, progressionSeries, COLORS[0], state.prefs, progressionCity.name);
 
     fillStatsProgression(statsDom, aggregatedStats, progressionCity.name, formatPeriodLabel(periodConfig), yearFrom, yearTo);
 
@@ -378,6 +379,7 @@ async function applyPeriodic() {
     const allSeries = [];
     const allStats = [];
     const labels = [];
+    let sharedNormals = null;
 
     // Create progress toast for multiple years
     if (selectedYears.length > 1) {
@@ -403,14 +405,13 @@ async function applyPeriodic() {
       const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
       const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
 
-      let normals = null;
+      // Fetch normals only once and reuse for all years
       if (state.prefs.showNormals && i === 0) {
         await new Promise(resolve => setTimeout(resolve, 200));
-        // Fetch normals only once
-        try { normals = await fetchNormals(periodicCity.lat, periodicCity.lon, signal); } catch (e) { normals = null; }
+        try { sharedNormals = await fetchNormals(periodicCity.lat, periodicCity.lon, signal); } catch (e) { sharedNormals = null; }
       }
 
-      let series = buildSeries(daily, hum, wind, normals);
+      let series = buildSeries(daily, hum, wind, state.prefs.showNormals ? sharedNormals : null);
 
       // Apply smoothing and trim to original date range
       if (smoothing > 0) {
@@ -425,9 +426,9 @@ async function applyPeriodic() {
     }
 
     if (allSeries.length === 1) {
-      renderAll(charts, allSeries[0], COLORS[0], state.prefs);
+      renderAll(charts, allSeries[0], COLORS[0], state.prefs, labels[0]);
     } else {
-      renderCompare(charts, allSeries, COLORS, state.prefs);
+      renderCompare(charts, allSeries, COLORS, state.prefs, labels);
     }
 
     fillStatsPeriodic(statsDom, allStats, labels, periodicCity.name, periodStart, periodEnd);
@@ -1032,6 +1033,14 @@ function aggregateSeriesForProgression(allSeries, yearLabels) {
     windMax: [],
     norm: null
   };
+
+  // Calculate climate norm average for the period (if available)
+  const firstSeriesWithNorm = allSeries.find(s => s && s.norm);
+  if (firstSeriesWithNorm) {
+    const normMean = arrayMean(firstSeriesWithNorm.norm);
+    // Create array with same value for all years
+    aggregated.norm = yearLabels.map(() => normMean);
+  }
 
   allSeries.forEach(series => {
     // For each year's series, take the mean/max/min values
