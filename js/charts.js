@@ -179,6 +179,10 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     series: tempSeries
   }, { notMerge: true });
 
+  // Calculate precipitation axis max from data
+  const precipMax = Math.max(...series.precip.filter(v => isFiniteNumber(v)));
+  const precipAxisMax = Math.max(10, Math.ceil(precipMax * 1.1)); // Min 10mm, with 10% padding
+
   ch.hydro.setOption({
     animation: false,
     legend: { show: false },
@@ -188,13 +192,22 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     yAxis: [
       {
         type: 'value',
-        interval: 5,
+        min: 0,
+        max: precipAxisMax,
+        splitNumber: 3,
         splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } },
         axisLabel: {
           show: true,
           color: axisLabelColor,
-          fontSize: 11,
-          formatter: '{value}'
+          fontSize: 10,
+          formatter: (value) => {
+            // Show only min (0), max, and middle threshold
+            if (value === 0) return '0';
+            if (value === precipAxisMax) return value.toFixed(0);
+            const middle = precipAxisMax / 2;
+            if (Math.abs(value - middle) < 0.5) return value.toFixed(0);
+            return '';
+          }
         },
         axisTick: { show: false },
         axisLine: { show: false }
@@ -464,6 +477,16 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     series: tempSeries
   }, { notMerge: true });
 
+  // Calculate precipitation axis max from all series
+  let precipMax = 0;
+  allSeries.forEach(series => {
+    if (series && series.precip) {
+      const max = Math.max(...series.precip.filter(v => isFiniteNumber(v)));
+      if (max > precipMax) precipMax = max;
+    }
+  });
+  const precipAxisMax = Math.max(10, Math.ceil(precipMax * 1.1)); // Min 10mm, with 10% padding
+
   ch.hydro.setOption({
     animation: false,
     legend: { show: false },
@@ -473,13 +496,22 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     yAxis: [
       {
         type: 'value',
-        interval: 5,
+        min: 0,
+        max: precipAxisMax,
+        splitNumber: 3,
         splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } },
         axisLabel: {
           show: true,
           color: axisLabelColor,
-          fontSize: 11,
-          formatter: '{value}'
+          fontSize: 10,
+          formatter: (value) => {
+            // Show only min (0), max, and middle threshold
+            if (value === 0) return '0';
+            if (value === precipAxisMax) return value.toFixed(0);
+            const middle = precipAxisMax / 2;
+            if (Math.abs(value - middle) < 0.5) return value.toFixed(0);
+            return '';
+          }
         },
         axisTick: { show: false },
         axisLine: { show: false }

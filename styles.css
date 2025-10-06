@@ -171,7 +171,9 @@ main.container-fluid {
   flex-direction: column;
   gap: 0;
   font-size: 0.8rem;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
 }
 
 #workspace.no-data::before {
@@ -249,6 +251,7 @@ main.container-fluid {
 #stats .stats-table {
   display: flex;
   flex-direction: column;
+  min-width: max-content;
 }
 
 #stats .stats-row {
@@ -329,8 +332,8 @@ main.container-fluid {
   align-items: center;
   gap: 0.35rem;
   flex: 0 1 auto;
-  margin-right: 0.5rem;
   min-width: 0;
+  max-width: 340px;
 }
 
 .city-tags {
@@ -549,14 +552,23 @@ input[type="date"]::-webkit-datetime-edit-text {
   align-items: center;
   gap: 0.35rem;
   flex: 0 1 auto;
+  min-width: 0;
 }
 
 .mode-controls.hidden {
   display: none;
 }
 
+#controls-comparison .city-input-wrapper {
+  width: 145px;
+}
+
 #controls-periodic .city-input-wrapper {
-  width: 180px;
+  width: 165px;
+}
+
+#controls-progression .city-input-wrapper {
+  width: 165px;
 }
 
 /* Year tags */
@@ -566,12 +578,14 @@ input[type="date"]::-webkit-datetime-edit-text {
   gap: 0.35rem;
   flex: 0 1 auto;
   min-width: 0;
+  max-width: 280px;
 }
 
 .year-tags {
   display: flex;
   gap: 0.35rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .year-tag {
@@ -620,12 +634,12 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 .year-input {
-  width: 100px;
+  width: 90px;
   flex-shrink: 0;
 }
 
 #controls-periodic input[type="text"] {
-  width: 110px;
+  width: 95px;
   flex-shrink: 0;
 }
 
@@ -634,8 +648,19 @@ input[type="date"]::-webkit-datetime-edit-text {
   display: contents;
 }
 
-#controls-progression .city-input-wrapper {
-  width: 180px;
+#period-type {
+  width: 115px;
+}
+
+#season-select,
+#month-select,
+#day-select {
+  width: 95px !important;
+}
+
+#year-from,
+#year-to {
+  width: 80px !important;
 }
 
 .city-dropdown {
@@ -896,6 +921,7 @@ input[type="date"]::-webkit-datetime-edit-text {
 
   .controls-row {
     flex-wrap: wrap;
+    gap: 0.4rem;
   }
 
   #city-inputs {
@@ -907,6 +933,98 @@ input[type="date"]::-webkit-datetime-edit-text {
 
   .action-buttons {
     margin-left: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  #config-bar {
+    padding: 0.5rem;
+  }
+
+  .controls-row {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  /* Selectors on first row */
+  #mode-selector,
+  #smoothing-selector {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  /* Mode-specific controls on second row */
+  .mode-controls {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  /* City input containers */
+  .city-tags-container,
+  .city-input-wrapper {
+    flex: 1 1 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .city-input-wrapper {
+    min-width: 0;
+  }
+
+  /* Date inputs in Overview */
+  #start, #end {
+    flex: 1 1 calc(50% - 0.2rem);
+    min-width: 0;
+    width: auto;
+  }
+
+  /* Year tags and input in Periodic */
+  .year-tags-container {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  #controls-periodic input[type="text"] {
+    flex: 1 1 calc(50% - 0.2rem);
+    min-width: 0;
+    width: auto !important;
+  }
+
+  /* Progression controls */
+  #period-type {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+
+  #period-config-container select,
+  #period-config-container input {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+
+  #year-from,
+  #year-to {
+    flex: 1 1 calc(50% - 0.2rem) !important;
+    min-width: 0;
+    width: auto !important;
+  }
+
+  /* Action buttons and Apply on third row */
+  .spacer {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .action-buttons {
+    flex: 0 0 auto;
+    margin-left: 0;
+    order: 10;
+  }
+
+  #apply {
+    flex: 1 1 auto;
+    order: 11;
   }
 }
 
@@ -976,195 +1094,4 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 .kofi-panel.hidden {
   display: none;
-}
-
-@media (max-width: 640px) {
-  #config-bar {
-    padding: 0.4rem 0.5rem;
-  }
-
-  #controls {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .controls-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem;
-    align-items: start;
-  }
-
-  /* Mode and smoothing selectors on first row */
-  #mode-selector,
-  #smoothing-selector {
-    width: 100%;
-  }
-
-  /* City tags take full width */
-  .city-tags-container,
-  .year-tags-container {
-    grid-column: 1 / -1;
-  }
-
-  /* City input and location button */
-  .city-input-wrapper {
-    grid-column: 1 / -1;
-    width: 100% !important;
-    display: flex;
-    gap: 0.35rem;
-  }
-
-  #controls-periodic .city-input-wrapper,
-  #controls-progression .city-input-wrapper {
-    width: 100% !important;
-  }
-
-  .city-search-input {
-    flex: 1;
-  }
-
-  /* Date inputs side by side */
-  #start, #end {
-    width: 100%;
-  }
-
-  .year-input {
-    width: 100%;
-  }
-
-  #controls-periodic input[type="text"] {
-    width: 100%;
-  }
-
-  /* Action buttons on separate row, right aligned */
-  .action-buttons {
-    grid-column: 1 / -1;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.35rem;
-  }
-
-  /* Mode controls full width */
-  .mode-controls {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem;
-  }
-
-  #controls select {
-    width: 100%;
-  }
-
-  #controls input {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.45rem;
-  }
-
-  #controls button {
-    font-size: 0.9rem;
-  }
-
-  #controls .primary {
-    font-size: 0.75rem;
-    padding: 0 0.8rem;
-  }
-
-  /* Period config for progression */
-  #period-config-container {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem;
-  }
-
-  #period-type {
-    grid-column: 1 / -1;
-  }
-
-  #season-select,
-  #month-select,
-  #day-select {
-    grid-column: 1 / -1;
-  }
-
-  #workspace {
-    padding: 0.5rem;
-    gap: 0.5rem;
-    overflow: visible;
-    min-height: auto;
-    flex: none;
-  }
-
-  #charts {
-    flex: none;
-    min-height: 400px;
-  }
-
-  .chart-card {
-    min-height: 200px;
-  }
-
-  .chart-card:first-child {
-    flex: none;
-    min-height: 250px;
-  }
-
-  .chart-card:last-child {
-    flex: none;
-    min-height: 200px;
-  }
-
-  #panel {
-    max-width: none;
-    flex: none;
-  }
-
-  #stats {
-    max-height: none;
-    overflow: visible;
-  }
-
-  .stats-row {
-    font-size: 0.75rem;
-  }
-
-  .stats-label,
-  .stats-value {
-    font-size: 0.75rem;
-  }
-
-  .toast {
-    bottom: 1rem;
-    left: 1rem;
-    right: 1rem;
-    transform: translateX(0) translateY(100px);
-    max-width: none;
-  }
-
-  .toast.visible {
-    transform: translateX(0) translateY(0);
-  }
-
-  .kofi-floater {
-    bottom: 16px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
-  }
-
-  .kofi-floater img {
-    width: 28px;
-    height: 28px;
-  }
-
-  .kofi-panel {
-    bottom: 40px;
-    right: 40px;
-    max-width: calc(100vw - 32px);
-    max-height: calc(100vh - 32px);
-    height: auto;
-  }
 }
