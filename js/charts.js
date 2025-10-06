@@ -10,11 +10,16 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
   const tempRange = series.tempMax.map((max, i) => (isFiniteNumber(max) && isFiniteNumber(series.tempMin[i]) ? max - series.tempMin[i] : null));
   const windSeries = (series.windMax && series.windMax.length) ? series.windMax : series.wind;
   const windAxisMax = 200;
-  const gridTop = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
-  const gridBottom = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
+  const gridTop = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
+  const gridBottom = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
 
   const smoothingActive = (prefs.smoothing || 0) > 0;
   const asterisk = smoothingActive ? '*' : '';
+
+  // Get theme-aware grid color
+  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+  const axisLabelColor = isDark ? '#9E9E9E' : '#757575';
 
   const baseXAxis = {
     type: 'category',
@@ -103,8 +108,14 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     yAxis: [
       {
         type: 'value',
-        splitLine: { show: prefs.showGrid, lineStyle: { color: '#ECEFF1' } },
-        axisLabel: { show: false },
+        interval: 5,
+        splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } },
+        axisLabel: {
+          show: true,
+          color: axisLabelColor,
+          fontSize: 11,
+          formatter: '{value}'
+        },
         axisTick: { show: false },
         axisLine: { show: false }
       },
@@ -112,6 +123,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
         type: 'value',
         min: 0,
         max: windAxisMax,
+        interval: 50,
         splitLine: { show: false },
         axisLabel: { show: false },
         axisTick: { show: false },
@@ -130,8 +142,14 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     yAxis: [
       {
         type: 'value',
-        splitLine: { show: prefs.showGrid, lineStyle: { color: '#ECEFF1' } },
-        axisLabel: { show: false },
+        interval: 5,
+        splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } },
+        axisLabel: {
+          show: true,
+          color: axisLabelColor,
+          fontSize: 11,
+          formatter: '{value}'
+        },
         axisTick: { show: false },
         axisLine: { show: false }
       },
@@ -171,11 +189,16 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
 export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, smoothing: 0 }) {
   const x = allSeries[0].x;
   const windAxisMax = 200;
-  const gridTop = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
-  const gridBottom = { left: 36, right: 32, top: 16, bottom: 24, containLabel: true };
+  const gridTop = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
+  const gridBottom = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
 
   const smoothingActive = (prefs.smoothing || 0) > 0;
   const asterisk = smoothingActive ? '*' : '';
+
+  // Get theme-aware grid color
+  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+  const axisLabelColor = isDark ? '#9E9E9E' : '#757575';
 
   const baseXAxis = {
     type: 'category',
@@ -292,8 +315,14 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     yAxis: [
       {
         type: 'value',
-        splitLine: { show: prefs.showGrid, lineStyle: { color: '#ECEFF1' } },
-        axisLabel: { show: false },
+        interval: 5,
+        splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } },
+        axisLabel: {
+          show: true,
+          color: axisLabelColor,
+          fontSize: 11,
+          formatter: '{value}'
+        },
         axisTick: { show: false },
         axisLine: { show: false }
       },
@@ -301,6 +330,7 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
         type: 'value',
         min: 0,
         max: windAxisMax,
+        interval: 50,
         splitLine: { show: false },
         axisLabel: { show: false },
         axisTick: { show: false },
@@ -319,8 +349,14 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     yAxis: [
       {
         type: 'value',
-        splitLine: { show: prefs.showGrid, lineStyle: { color: '#ECEFF1' } },
-        axisLabel: { show: false },
+        interval: 5,
+        splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } },
+        axisLabel: {
+          show: true,
+          color: axisLabelColor,
+          fontSize: 11,
+          formatter: '{value}'
+        },
         axisTick: { show: false },
         axisLine: { show: false }
       },
