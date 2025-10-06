@@ -642,12 +642,20 @@ function renderCityTags() {
 }
 
 function updateCitySearchState() {
+  const cityInputWrapper = citySearchInput.closest('.city-input-wrapper');
+
   if (selectedCities.length >= MAX_CITIES) {
-    citySearchInput.disabled = true;
-    citySearchInput.placeholder = `Maximum ${MAX_CITIES} cities`;
+    // Hide input wrapper completely when max reached
+    if (cityInputWrapper) {
+      cityInputWrapper.classList.add('hidden');
+    }
   } else {
+    // Show input with dynamic placeholder
+    if (cityInputWrapper) {
+      cityInputWrapper.classList.remove('hidden');
+    }
     citySearchInput.disabled = false;
-    citySearchInput.placeholder = 'Add city...';
+    citySearchInput.placeholder = `City ${selectedCities.length + 1}/${MAX_CITIES}`;
   }
 }
 
@@ -874,11 +882,13 @@ function renderYearTags() {
 
 function updateYearInputState() {
   if (selectedYears.length >= 3) {
-    yearInput.disabled = true;
-    yearInput.placeholder = 'Max 3';
+    // Hide year input when max reached
+    yearInput.style.display = 'none';
   } else {
+    // Show input with dynamic placeholder
+    yearInput.style.display = '';
     yearInput.disabled = false;
-    yearInput.placeholder = 'Add year...';
+    yearInput.placeholder = `Year ${selectedYears.length + 1}/3`;
   }
 }
 

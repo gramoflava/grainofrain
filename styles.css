@@ -171,9 +171,7 @@ main.container-fluid {
   flex-direction: column;
   gap: 0;
   font-size: 0.8rem;
-  overflow-x: auto;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
 
 #workspace.no-data::before {
@@ -251,7 +249,6 @@ main.container-fluid {
 #stats .stats-table {
   display: flex;
   flex-direction: column;
-  min-width: max-content;
 }
 
 #stats .stats-row {
@@ -319,10 +316,11 @@ main.container-fluid {
   align-items: center;
   gap: 0.35rem;
   flex: 1;
+  flex-wrap: nowrap;
 }
 
 #controls .spacer {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0.5rem;
 }
 
@@ -330,28 +328,29 @@ main.container-fluid {
 .city-tags-container {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  flex: 0 1 auto;
+  gap: 0.3rem;
+  flex: 0 0 auto;
   min-width: 0;
-  max-width: 340px;
 }
 
 .city-tags {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.3rem;
   align-items: center;
+  flex-wrap: nowrap;
 }
 
 .city-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  gap: 0.3rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #fff;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .city-tag.tag-blue {
@@ -390,33 +389,37 @@ main.container-fluid {
 .city-input-wrapper {
   position: relative;
   flex: 0 0 auto;
-  width: 145px;
   display: flex;
   gap: 2px;
+  transition: all 0.2s ease;
+}
+
+.city-input-wrapper.hidden {
+  display: none;
 }
 
 .city-search-input {
-  flex: 1;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.85rem;
-  border-radius: 6px;
+  width: 90px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
-  height: 30px;
+  height: 28px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .auto-location-btn {
-  flex: 0 0 30px;
-  width: 30px;
-  height: 30px;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--input-bg);
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -471,14 +474,14 @@ main.container-fluid {
 }
 
 #controls select {
-  padding: 0.3rem 0.5rem;
-  font-size: 0.85rem;
-  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
-  height: 30px;
-  width: 140px;
+  height: 28px;
+  flex: 0 0 auto;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
   -webkit-appearance: none;
@@ -486,9 +489,9 @@ main.container-fluid {
   appearance: none;
   background-image: url('data:image/svg+xml;utf8,<svg fill="%23607d8b" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
-  background-position: right 0.3rem center;
-  background-size: 1.2rem;
-  padding-right: 1.8rem;
+  background-position: right 0.25rem center;
+  background-size: 1rem;
+  padding-right: 1.5rem;
 }
 
 #controls select:hover {
@@ -508,14 +511,15 @@ main.container-fluid {
 }
 
 #controls input {
-  padding: 0.3rem 0.5rem;
-  font-size: 0.85rem;
-  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
-  min-width: 0;
-  height: 30px;
+  width: 75px;
+  flex: 0 0 auto;
+  height: 28px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -542,8 +546,8 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 #start, #end {
-  width: 150px;
-  flex-shrink: 0;
+  width: 132px !important;
+  flex: 0 0 auto;
 }
 
 /* Mode controls */
@@ -551,53 +555,42 @@ input[type="date"]::-webkit-datetime-edit-text {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .mode-controls.hidden {
   display: none;
 }
 
-#controls-comparison .city-input-wrapper {
-  width: 145px;
-}
-
-#controls-periodic .city-input-wrapper {
-  width: 165px;
-}
-
-#controls-progression .city-input-wrapper {
-  width: 165px;
-}
-
 /* Year tags */
 .year-tags-container {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  flex: 0 1 auto;
+  gap: 0.3rem;
+  flex: 0 0 auto;
   min-width: 0;
-  max-width: 280px;
 }
 
 .year-tags {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.3rem;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .year-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  gap: 0.3rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #fff;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .year-tag.tag-blue {
@@ -634,13 +627,13 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 .year-input {
-  width: 90px;
-  flex-shrink: 0;
+  width: 95px !important;
+  flex: 0 0 auto;
 }
 
 #controls-periodic input[type="text"] {
-  width: 95px;
-  flex-shrink: 0;
+  width: 70px !important;
+  flex: 0 0 auto;
 }
 
 /* Progression period config container */
@@ -649,18 +642,21 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 #period-type {
-  width: 115px;
+  width: auto;
+  flex: 0 0 auto;
 }
 
 #season-select,
 #month-select,
 #day-select {
-  width: 95px !important;
+  width: 85px !important;
+  flex: 0 0 auto !important;
 }
 
 #year-from,
 #year-to {
-  width: 80px !important;
+  width: 65px !important;
+  flex: 0 0 auto !important;
 }
 
 .city-dropdown {
@@ -720,15 +716,15 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 #controls button {
   padding: 0;
-  font-size: 1rem;
-  border-radius: 6px;
+  font-size: 0.8rem;
+  border-radius: 4px;
   font-weight: 600;
   border: none;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  height: 30px;
-  min-width: 30px;
+  height: 28px;
+  min-width: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -737,8 +733,8 @@ input[type="date"]::-webkit-datetime-edit-text {
 #controls .primary {
   background: #1e88e5;
   color: #fff;
-  padding: 0 1rem;
-  font-size: 0.85rem;
+  padding: 0 0.75rem;
+  font-size: 0.8rem;
   min-width: auto;
 }
 
@@ -766,16 +762,16 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 .action-buttons {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.2rem;
   align-items: center;
 }
 
 .icon-btn {
-  width: 26px !important;
-  height: 26px !important;
-  min-width: 26px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
   padding: 0 !important;
-  font-size: 0.95rem !important;
+  font-size: 0.9rem !important;
   background: transparent !important;
   color: var(--text-secondary) !important;
   border-radius: 4px !important;
@@ -785,8 +781,8 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 .icon-btn img {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   filter: brightness(0) saturate(100%) invert(51%) sepia(11%) saturate(626%) hue-rotate(155deg) brightness(91%) contrast(87%);
 }
 
@@ -919,6 +915,11 @@ input[type="date"]::-webkit-datetime-edit-text {
     max-width: none;
   }
 
+  #charts {
+    flex: none;
+    min-height: 400px;
+  }
+
   .controls-row {
     flex-wrap: wrap;
     gap: 0.4rem;
@@ -936,95 +937,107 @@ input[type="date"]::-webkit-datetime-edit-text {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   #config-bar {
-    padding: 0.5rem;
+    padding: 0.4rem;
+  }
+
+  #workspace {
+    padding: 0.4rem;
+    gap: 0.4rem;
+    overflow: visible;
+  }
+
+  #panel {
+    overflow: visible;
+  }
+
+  #stats {
+    overflow: visible;
   }
 
   .controls-row {
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: 0.5rem;
   }
 
-  /* Selectors on first row */
+  /* Group 1: Mode selectors - full width row */
   #mode-selector,
   #smoothing-selector {
-    flex: 1 1 auto;
-    min-width: 120px;
+    flex: 1 1 calc(50% - 0.25rem);
   }
 
-  /* Mode-specific controls on second row */
-  .mode-controls {
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  /* City input containers */
+  /* Group 2: Cities - full width */
   .city-tags-container,
+  .year-tags-container {
+    flex: 1 1 100%;
+  }
+
+  .city-tags,
+  .year-tags {
+    flex-wrap: wrap;
+  }
+
   .city-input-wrapper {
     flex: 1 1 100%;
-    width: 100% !important;
-    max-width: 100% !important;
   }
 
-  .city-input-wrapper {
-    min-width: 0;
-  }
-
-  /* Date inputs in Overview */
-  #start, #end {
-    flex: 1 1 calc(50% - 0.2rem);
-    min-width: 0;
+  .city-search-input {
+    flex: 1;
     width: auto;
   }
 
-  /* Year tags and input in Periodic */
-  .year-tags-container {
+  /* Group 3: Mode controls - full width */
+  .mode-controls {
     flex: 1 1 100%;
-    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  /* Group 4: Dates/parameters - adaptive */
+  #start, #end {
+    flex: 1 1 calc(50% - 0.25rem);
+    width: auto;
   }
 
   #controls-periodic input[type="text"] {
-    flex: 1 1 calc(50% - 0.2rem);
-    min-width: 0;
-    width: auto !important;
+    flex: 1 1 calc(50% - 0.25rem);
+    width: auto;
   }
 
-  /* Progression controls */
+  .year-input {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
   #period-type {
     flex: 1 1 100%;
-    width: 100% !important;
+    width: auto;
   }
 
-  #period-config-container select,
-  #period-config-container input {
-    flex: 1 1 100%;
-    width: 100% !important;
+  #season-select,
+  #month-select,
+  #day-select {
+    flex: 1 1 100% !important;
+    width: auto !important;
   }
 
   #year-from,
   #year-to {
-    flex: 1 1 calc(50% - 0.2rem) !important;
-    min-width: 0;
+    flex: 1 1 calc(50% - 0.25rem) !important;
     width: auto !important;
   }
 
-  /* Action buttons and Apply on third row */
+  /* Group 5: Control buttons */
   .spacer {
     flex: 1 1 100%;
-    min-width: 100%;
   }
 
   .action-buttons {
     flex: 0 0 auto;
-    margin-left: 0;
-    order: 10;
   }
 
   #apply {
     flex: 1 1 auto;
-    order: 11;
   }
 }
 
