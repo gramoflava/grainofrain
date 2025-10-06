@@ -147,7 +147,7 @@ async function applyComparison() {
       const label = formatCityLabel(geo);
 
       const daily = await fetchDaily(geo.lat, geo.lon, paddedStart, paddedEnd, signal);
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const hourly = await fetchHourly(geo.lat, geo.lon, paddedStart, paddedEnd, signal);
       const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
@@ -155,7 +155,7 @@ async function applyComparison() {
 
       let normals = null;
       if (state.prefs.showNormals) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
         try { normals = await fetchNormals(geo.lat, geo.lon, signal); } catch (e) { normals = null; }
       }
 
