@@ -65,14 +65,10 @@ function normalizeState(state) {
     ...incomingProgression
   };
 
-  // Migrate old 'single' mode to 'comparison'
-  let mode = state?.mode || base.mode;
-  if (mode === 'single') mode = 'comparison';
-
   return {
     ...base,
     ...state,
-    mode,
+    mode: 'comparison',
     date: normalizedDate,
     periodic: normalizedPeriodic,
     progression: normalizedProgression,

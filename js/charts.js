@@ -1,3 +1,5 @@
+import { isFiniteNumber } from './utils.js';
+
 export function initCharts() {
   const temp = echarts.init(document.getElementById('chart-temp'));
   const hydro = echarts.init(document.getElementById('chart-hydro'));
@@ -528,8 +530,4 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     ],
     series: hydroSeries
   }, { notMerge: true });
-}
-
-function isFiniteNumber(value) {
-  return typeof value === 'number' && Number.isFinite(value);
 }
