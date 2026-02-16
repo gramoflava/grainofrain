@@ -72,6 +72,12 @@ restoreProgressionInputs();
 showNoDataPlaceholder();
 autoApplyOnLoad();
 
+// Resize ECharts on window/orientation change
+window.addEventListener('resize', () => {
+  if (charts.temp) charts.temp.resize();
+  if (charts.hydro) charts.hydro.resize();
+});
+
 // --- Mode & Controls ---
 
 function setupModeSelector() {
