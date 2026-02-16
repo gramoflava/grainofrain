@@ -851,11 +851,7 @@ function handleClipboardError(err) {
   const platform = detectPlatform();
   let message = 'Unable to copy to clipboard.\n\n';
 
-  if (platform.isSafari) {
-    message += 'Safari doesn\'t support clipboard images.\n';
-    message += '• Use Download button\n';
-    message += '• Or try Chrome/Firefox';
-  } else if (!navigator.clipboard) {
+  if (!navigator.clipboard) {
     message += 'Clipboard API not supported.\n';
     message += '• Use Download button\n';
     message += '• Or access via HTTPS';

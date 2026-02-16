@@ -11,11 +11,16 @@ export async function copyPngToClipboard(containerId) {
   if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
     throw new Error('Clipboard copy is not supported in this browser');
   }
-  const canvas = await renderCanvas(containerId);
-  if (!canvas) throw new Error('Nothing to copy');
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-  if (!blob) throw new Error('Failed to prepare image');
-  const item = new ClipboardItem({ 'image/png': blob });
+  // Safari requires ClipboardItem to receive a Promise for the blob,
+  // not a pre-resolved blob. This keeps the write within the user gesture.
+  const item = new ClipboardItem({
+    'image/png': renderCanvas(containerId).then(canvas => {
+      if (!canvas) throw new Error('Nothing to copy');
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Failed to prepare image')), 'image/png');
+      });
+    })
+  });
   await navigator.clipboard.write([item]);
 }
 
