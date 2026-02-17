@@ -12,8 +12,11 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
   const tempRange = series.tempMax.map((max, i) => (isFiniteNumber(max) && isFiniteNumber(series.tempMin[i]) ? max - series.tempMin[i] : null));
   const windSeries = (series.windMax && series.windMax.length) ? series.windMax : series.wind;
   const windAxisMax = 200;
-  const gridTop = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
-  const gridBottom = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
+  const narrow = window.innerWidth <= 480;
+  const gridLeft = narrow ? 36 : 56;
+  const gridRight = narrow ? 12 : 32;
+  const gridTop = { left: gridLeft, right: gridRight, top: 16, bottom: 24, containLabel: true };
+  const gridBottom = { left: gridLeft, right: gridRight, top: 16, bottom: 24, containLabel: true };
 
   const smoothingActive = (prefs.smoothing || 0) > 0;
   const asterisk = smoothingActive ? '*' : '';
@@ -250,8 +253,11 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
 export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, smoothing: 0 }, labels = []) {
   const x = allSeries[0].x;
   const windAxisMax = 200;
-  const gridTop = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
-  const gridBottom = { left: 56, right: 32, top: 16, bottom: 24, containLabel: true };
+  const narrow = window.innerWidth <= 480;
+  const gridLeft = narrow ? 36 : 56;
+  const gridRight = narrow ? 12 : 32;
+  const gridTop = { left: gridLeft, right: gridRight, top: 16, bottom: 24, containLabel: true };
+  const gridBottom = { left: gridLeft, right: gridRight, top: 16, bottom: 24, containLabel: true };
 
   const smoothingActive = (prefs.smoothing || 0) > 0;
   const asterisk = smoothingActive ? '*' : '';
