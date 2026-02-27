@@ -35,11 +35,15 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     axisLine: { lineStyle: { color: '#CFD8DC' } }
   };
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
+  const tooltipBg = isDark ? '#2a2a2a' : '#ffffff';
+  const tooltipBorder = isDark ? '#404040' : '#e0e0e0';
+  const tooltipText = isDark ? '#e0e0e0' : '#263238';
+
   const tooltip = {
     trigger: 'axis',
-    backgroundColor: 'var(--bg-card)',
-    borderColor: 'var(--border-color)',
-    textStyle: { color: 'var(--text-primary)' },
+    backgroundColor: tooltipBg,
+    borderColor: tooltipBorder,
+    textStyle: { color: tooltipText },
     formatter: (params) => {
       if (!params || params.length === 0) return '';
 
@@ -277,12 +281,16 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
   };
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
 
+  const tooltipBg = isDark ? '#2a2a2a' : '#ffffff';
+  const tooltipBorder = isDark ? '#404040' : '#e0e0e0';
+  const tooltipText = isDark ? '#e0e0e0' : '#263238';
+
   // Custom tooltip formatter to show only main series with colored markers
   const tooltip = {
     trigger: 'axis',
-    backgroundColor: 'var(--bg-card)',
-    borderColor: 'var(--border-color)',
-    textStyle: { color: 'var(--text-primary)' },
+    backgroundColor: tooltipBg,
+    borderColor: tooltipBorder,
+    textStyle: { color: tooltipText },
     formatter: (params) => {
       if (!params || params.length === 0) return '';
 
