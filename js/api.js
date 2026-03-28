@@ -4,17 +4,24 @@ const ERA_URL = 'https://archive-api.open-meteo.com/v1/era5';
 // In-memory cache for climate normals (keyed by "lat,lon")
 const _normalsCache = new Map();
 
-// Fetch with exponential backoff retry on 429
-async function fetchWithRetry(url, options = {}, retries = 3) {
-  const delays = [500, 1000, 2000];
-  for (let attempt = 0; attempt <= retries; attempt++) {
+// Fetch with unlimited retries on 429, using Retry-After header or a fixed 30s wait.
+// Will wait as long as needed — never gives up unless the request is cancelled.
+async function fetchWithRetry(url, options = {}) {
+  const DEFAULT_WAIT = 60000;
+  while (true) {
     if (options.signal?.aborted) throw new Error('Cancelled');
     const res = await fetch(url, options);
-    if (res.status === 429 && attempt < retries) {
-      await new Promise(resolve => setTimeout(resolve, delays[attempt]));
-      continue;
-    }
-    return res;
+    if (res.status !== 429) return res;
+
+    // Respect Retry-After header if present (value in seconds)
+    const retryAfterHeader = res.headers.get('Retry-After');
+    const seconds = retryAfterHeader ? parseFloat(retryAfterHeader) : NaN;
+    const wait = Number.isFinite(seconds) ? seconds * 1000 : DEFAULT_WAIT;
+
+    // Notify any listeners so the UI can show a waiting message
+    window.dispatchEvent(new CustomEvent('api-rate-limited', { detail: { waitMs: wait } }));
+
+    await new Promise(resolve => setTimeout(resolve, wait));
   }
 }
 
@@ -40,7 +47,7 @@ export async function fetchDaily(lat, lon, start, end, signal) {
   const today = new Date().toISOString().slice(0,10);
   const actualEnd = end > today ? today : end;
 
-  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,snowfall_water_equivalent_sum,windspeed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,mean_relative_humidity_2m,mean_wind_speed_10m&timezone=UTC`;
+  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,snowfall_water_equivalent_sum,wind_speed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,relative_humidity_2m_mean,wind_speed_10m_mean&timezone=UTC`;
   const res = await fetchWithRetry(url, { signal });
   if (!res.ok) {
     throw new Error(`Failed to load daily data (${res.status})`);
@@ -169,12 +176,12 @@ function buildDailyMap(daily) {
   const precip = Array.isArray(daily.precipitation_sum) ? daily.precipitation_sum : [];
   const rain = Array.isArray(daily.rain_sum) ? daily.rain_sum : [];
   const snow = Array.isArray(daily.snowfall_water_equivalent_sum) ? daily.snowfall_water_equivalent_sum : [];
-  const windMax = Array.isArray(daily.windspeed_10m_max) ? daily.windspeed_10m_max : [];
+  const windMax = Array.isArray(daily.wind_speed_10m_max) ? daily.wind_speed_10m_max : [];
   const windGusts = Array.isArray(daily.wind_gusts_10m_max) ? daily.wind_gusts_10m_max : [];
   const sunshineDur = Array.isArray(daily.sunshine_duration) ? daily.sunshine_duration : [];
   const daylightDur = Array.isArray(daily.daylight_duration) ? daily.daylight_duration : [];
-  const humidity = Array.isArray(daily.mean_relative_humidity_2m) ? daily.mean_relative_humidity_2m : [];
-  const wind = Array.isArray(daily.mean_wind_speed_10m) ? daily.mean_wind_speed_10m : [];
+  const humidity = Array.isArray(daily.relative_humidity_2m_mean) ? daily.relative_humidity_2m_mean : [];
+  const wind = Array.isArray(daily.wind_speed_10m_mean) ? daily.wind_speed_10m_mean : [];
   const map = new Map();
   for (let i = 0; i < time.length; i++) {
     map.set(time[i], {

@@ -75,3 +75,28 @@ export function removeProgressToast(toast) {
     setTimeout(() => toast.remove(), 300);
   }
 }
+
+// Auto-dismissing warning toast for rate-limit events.
+// durationMs controls how long it stays — pass the actual wait time so it
+// disappears right as the retry fires.
+export function showRateLimitWarning(msg, durationMs = 5000) {
+  const existing = document.getElementById('toast-rate-limit');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'toast-rate-limit';
+  toast.className = 'toast toast-warning';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add('visible'), 10);
+
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  }, durationMs);
+
+  toast.addEventListener('click', () => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  });
+}

@@ -5,7 +5,7 @@ import { initCharts, renderAll, renderCompare, setHydroTab } from './charts.js';
 import { exportPng, copyPngToClipboard } from './export.js';
 import { createCitySelector } from './city-selector.js';
 import { fillStats, fillStatsPeriodic, fillStatsProgression } from './stats.js';
-import { showMessage, createProgressToast, updateProgressToast, removeProgressToast, setAbortControllerRef } from './toast.js';
+import { showMessage, createProgressToast, updateProgressToast, removeProgressToast, showRateLimitWarning, setAbortControllerRef } from './toast.js';
 import {
   isFiniteNumber, escapeHtml, sanitizeDate, isoToday, isoYearStart,
   addDays, formatCityLabel, average, sum,
@@ -25,6 +25,7 @@ let periodicCity = null;
 let progressionCity = null;
 let selectedYears = [];
 let abortController = null;
+let _loadProgress = null; // { loaded, total } — updated during progression loading
 let hasData = false;
 
 setAbortControllerRef(() => abortController, (v) => { abortController = v; });
@@ -71,6 +72,17 @@ restorePeriodicInputs();
 restoreProgressionInputs();
 showNoDataPlaceholder();
 autoApplyOnLoad();
+
+// Show a separate rate-limit warning toast that auto-dismisses when the retry fires
+window.addEventListener('api-rate-limited', (e) => {
+  const { waitMs } = e.detail;
+  const retryAt = new Date(Date.now() + waitMs);
+  const hh = retryAt.getHours().toString().padStart(2, '0');
+  const mm = retryAt.getMinutes().toString().padStart(2, '0');
+  const ss = retryAt.getSeconds().toString().padStart(2, '0');
+  const progressPart = _loadProgress ? ` · ${_loadProgress.loaded}/${_loadProgress.total} loaded` : '';
+  showRateLimitWarning(`Rate limited${progressPart} — retrying at ${hh}:${mm}:${ss}`, waitMs);
+});
 
 // Resize ECharts on window/orientation change
 window.addEventListener('resize', () => {
@@ -524,8 +536,6 @@ async function applyProgression() {
   if (yearFrom > yearTo) return showMessage('From year must be before To year', 'error');
 
   const yearRange = yearTo - yearFrom + 1;
-  if (yearRange > 50) return showMessage('Year range too large (max 50 years to avoid rate limits)', 'error');
-  if (yearRange > 20) showMessage(`Loading ${yearRange} years - this may take a while...`, 'info');
 
   const periodType = periodTypeSelect.value;
   let periodConfig = {};
@@ -557,12 +567,15 @@ async function applyProgression() {
     }
 
     loadingToast = createProgressToast();
+    const loadStart = Date.now();
+    _loadProgress = { loaded: 0, total: totalYears };
 
     for (let year = yearFrom; year <= yearTo; year++) {
       if (signal.aborted) throw new Error('Cancelled');
 
       const currentIndex = year - yearFrom + 1;
-      updateProgressToast(loadingToast, `Loading ${year}... (${currentIndex}/${totalYears})`);
+      updateProgressToast(loadingToast, `Loading ${year}… (${currentIndex - 1}/${totalYears})`);
+      _loadProgress = { loaded: currentIndex - 1, total: totalYears };
 
       const { startDate, endDate } = getPeriodDates(year, periodConfig);
 
@@ -570,8 +583,7 @@ async function applyProgression() {
       allSeries.push(buildSeries(daily, null, null, sharedNormals));
       allStats.push(computeStats(allSeries[allSeries.length - 1]));
       labels.push(year.toString());
-
-      if (year < yearTo) await new Promise(resolve => setTimeout(resolve, 300));
+      _loadProgress = { loaded: currentIndex, total: totalYears };
     }
 
     const aggregatedStats = aggregateProgressionStats(allStats);
@@ -580,25 +592,30 @@ async function applyProgression() {
     renderAll(charts, progressionSeries, COLORS[0], state.prefs, progressionCity.name);
     fillStatsProgression(statsDom, aggregatedStats, progressionCity.name, formatPeriodLabel(periodConfig), yearFrom, yearTo);
 
-    removeProgressToast(loadingToast);
+    const elapsed = formatDuration(Date.now() - loadStart);
+    updateProgressToast(loadingToast, `${totalYears}/${totalYears} loaded in ${elapsed}`);
+    setTimeout(() => removeProgressToast(loadingToast), 4000);
     showDataView();
-    showMessage('✓ Data loaded', 'success');
 
     state.progression = { city: progressionCity, periodConfig, yearFrom, yearTo };
     saveState(state);
   } catch (e) {
     console.error(e);
     if (loadingToast) removeProgressToast(loadingToast);
-    if (e.message === 'Cancelled') {
-      // Silently handle cancellation
-    } else if (e.message && (e.message.includes('429') || e.message.includes('Too Many Requests'))) {
-      showMessage('Rate limited by API. Please wait a moment and try again with a smaller year range.', 'error');
-    } else {
+    if (e.message !== 'Cancelled') {
       showMessage(e.message || 'An error occurred', 'error');
     }
   } finally {
     abortController = null;
+    _loadProgress = null;
   }
+}
+
+function formatDuration(ms) {
+  const totalSecs = Math.round(ms / 1000);
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 // --- Progression helpers ---

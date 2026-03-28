@@ -961,6 +961,14 @@ input[type="date"]::-webkit-datetime-edit-text {
   background: #1565c0;
 }
 
+.toast.toast-warning {
+  background: #e65100;
+}
+
+#toast-rate-limit {
+  bottom: 2rem;
+}
+
 @media (max-width: 1024px) {
   #workspace {
     flex-direction: column;
