@@ -1,6 +1,4 @@
-export function buildSeries(daily, humidityAgg, windAgg, normals) {
-  const alignedHumidity = alignAggregates(daily.date, humidityAgg);
-  const alignedWind = alignAggregates(daily.date, windAgg);
+export function buildSeries(daily, _humidityAgg, _windAgg, normals) {
   const normSeries = normals ? mapNormalsToDates(daily.date, normals) : null;
   const n = daily.date.length;
   // Convert sunshine/daylight from seconds to hours
@@ -15,8 +13,8 @@ export function buildSeries(daily, humidityAgg, windAgg, normals) {
     precip: daily.precip,
     rain: daily.rain || new Array(n).fill(null),
     snow: daily.snow || new Array(n).fill(null),
-    humidity: alignedHumidity,
-    wind: alignedWind,
+    humidity: daily.humidity || new Array(n).fill(null),
+    wind: daily.wind || new Array(n).fill(null),
     windMax: daily.windMax,
     windGusts: daily.windGusts || new Array(n).fill(null),
     sunshineDuration,
@@ -60,20 +58,6 @@ export function computeStats(series) {
   return { minT, maxT, avgT, climateDev, precipTotal, precipDays, precipMax, rainTotal, snowTotal, humAvg, windAvg, windMax, windGustsMax, sunshineTotal, daylightTotal, totalDays };
 }
 
-function alignAggregates(dates, aggregate) {
-  if (!aggregate || !Array.isArray(aggregate.days) || !Array.isArray(aggregate.means)) {
-    return new Array(dates.length).fill(null);
-  }
-  const map = new Map();
-  for (let i = 0; i < aggregate.days.length; i++) {
-    const day = aggregate.days[i];
-    const value = aggregate.means[i];
-    if (typeof day === 'string' && isNumber(value)) {
-      map.set(day, value);
-    }
-  }
-  return dates.map(date => (map.has(date) ? map.get(date) : null));
-}
 
 function avg(arr) {
   const values = filterNumbers(arr);

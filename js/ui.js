@@ -1,5 +1,5 @@
 import { loadState, saveState } from './store.js';
-import { fetchDaily, fetchHourly, dailyMeanFromHourly, fetchNormals, getLocationFromIP } from './api.js';
+import { fetchDaily, fetchNormals, getLocationFromIP } from './api.js';
 import { buildSeries, computeStats } from './transform.js';
 import { initCharts, renderAll, renderCompare, setHydroTab } from './charts.js';
 import { exportPng, copyPngToClipboard } from './export.js';
@@ -404,19 +404,13 @@ async function applyComparison() {
       const label = formatCityLabel(geo);
 
       const daily = await fetchDaily(geo.lat, geo.lon, paddedStart, paddedEnd, signal);
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      const hourly = await fetchHourly(geo.lat, geo.lon, paddedStart, paddedEnd, signal);
-      const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
-      const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
 
       let normals = null;
       if (state.prefs.showNormals) {
-        await new Promise(resolve => setTimeout(resolve, 300));
         try { normals = await fetchNormals(geo.lat, geo.lon, signal); } catch (e) { normals = null; }
       }
 
-      let series = buildSeries(daily, hum, wind, normals);
+      let series = buildSeries(daily, null, null, normals);
       if (smoothing > 0) series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
 
       entities.push({
@@ -487,18 +481,12 @@ async function applyPeriodic() {
       const paddedEnd = addDays(endIso, padding);
 
       const daily = await fetchDaily(periodicCity.lat, periodicCity.lon, paddedStart, paddedEnd, signal);
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const hourly = await fetchHourly(periodicCity.lat, periodicCity.lon, paddedStart, paddedEnd, signal);
-      const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
-      const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
 
       if (state.prefs.showNormals && i === 0) {
-        await new Promise(resolve => setTimeout(resolve, 200));
         try { sharedNormals = await fetchNormals(periodicCity.lat, periodicCity.lon, signal); } catch (e) { sharedNormals = null; }
       }
 
-      let series = buildSeries(daily, hum, wind, state.prefs.showNormals ? sharedNormals : null);
+      let series = buildSeries(daily, null, null, state.prefs.showNormals ? sharedNormals : null);
       if (smoothing > 0) series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
 
       allSeries.push(series);
@@ -579,11 +567,7 @@ async function applyProgression() {
       const { startDate, endDate } = getPeriodDates(year, periodConfig);
 
       const daily = await fetchDaily(progressionCity.lat, progressionCity.lon, startDate, endDate, signal);
-      const hourly = await fetchHourly(progressionCity.lat, progressionCity.lon, startDate, endDate, signal);
-      const hum = dailyMeanFromHourly(hourly.time, hourly.humidity);
-      const wind = dailyMeanFromHourly(hourly.time, hourly.wind);
-
-      allSeries.push(buildSeries(daily, hum, wind, sharedNormals));
+      allSeries.push(buildSeries(daily, null, null, sharedNormals));
       allStats.push(computeStats(allSeries[allSeries.length - 1]));
       labels.push(year.toString());
 
