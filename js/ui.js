@@ -1,5 +1,5 @@
 import { loadState, saveState } from './store.js';
-import { fetchDaily, fetchNormals, getLocationFromIP } from './api.js';
+import { fetchDaily, fetchNormals, getLocationFromIP, clearDailyCache } from './api.js';
 import { buildSeries, computeStats } from './transform.js';
 import { initCharts, renderAll, renderCompare, setHydroTab } from './charts.js';
 import { exportPng, copyPngToClipboard } from './export.js';
@@ -27,6 +27,7 @@ let selectedYears = [];
 let abortController = null;
 let _loadProgress = null; // { loaded, total } — updated during progression loading
 let hasData = false;
+let _comparisonDebounceTimer = null;
 
 setAbortControllerRef(() => abortController, (v) => { abortController = v; });
 
@@ -40,6 +41,7 @@ const startInput = document.getElementById('start');
 const endInput = document.getElementById('end');
 const statsDom = document.getElementById('stats');
 const workspaceDom = document.getElementById('workspace');
+const workspaceStub = document.getElementById('workspace-stub');
 const citySearchInput = document.getElementById('city-search');
 const cityTagsContainer = document.getElementById('city-tags');
 const cityDropdown = document.getElementById('city-dropdown');
@@ -67,6 +69,10 @@ setupCitySelectors();
 setupYearTagSelector();
 setupPeriodTypeSelector();
 setupAutoLocationButtons();
+startInput.addEventListener('change', () => scheduleComparisonApply(300));
+endInput.addEventListener('change', () => scheduleComparisonApply(300));
+yearFromInput.addEventListener('change', () => { if (state.mode === 'progression') showModeStub('progression'); });
+yearToInput.addEventListener('change', () => { if (state.mode === 'progression') showModeStub('progression'); });
 restoreCityTags();
 restorePeriodicInputs();
 restoreProgressionInputs();
@@ -119,7 +125,20 @@ function setupSmoothingSelector() {
   smoothingSelector.addEventListener('change', (e) => {
     state.prefs.smoothing = parseInt(e.target.value, 10);
     saveState(state);
+    if (state.mode === 'comparison' && hasData) {
+      scheduleComparisonApply();
+    }
   });
+}
+
+function scheduleComparisonApply(delay = 0) {
+  if (state.mode !== 'comparison') return;
+  clearTimeout(_comparisonDebounceTimer);
+  _comparisonDebounceTimer = setTimeout(() => {
+    if (selectedCities.length > 0 && startInput.value && endInput.value) {
+      applyComparison();
+    }
+  }, delay);
 }
 
 function updateSmoothingVisibility() {
@@ -139,17 +158,15 @@ function switchMode(mode) {
     comparisonControls.classList.remove('hidden');
     if (selectedCities.length > 0 && startInput.value && endInput.value) {
       applyComparison();
+    } else {
+      showWelcomeStub();
     }
   } else if (mode === 'periodic') {
     periodicControls.classList.remove('hidden');
-    if (periodicCity && selectedYears.length > 0) {
-      applyPeriodic();
-    }
+    showModeStub('periodic');
   } else if (mode === 'progression') {
     progressionControls.classList.remove('hidden');
-    if (progressionCity && yearFromInput.value && yearToInput.value) {
-      applyProgression();
-    }
+    showModeStub('progression');
   }
 }
 
@@ -158,7 +175,6 @@ function bindControls() {
   if (controlsForm) {
     controlsForm.addEventListener('submit', (event) => {
       event.preventDefault();
-      apply();
     });
   }
 
@@ -227,12 +243,18 @@ function addCityTag(city) {
   updateCitySearchState();
   citySearchInput.value = '';
   cityDropdown.classList.remove('visible');
+  scheduleComparisonApply();
 }
 
 function removeCityTag(index) {
   selectedCities.splice(index, 1);
   renderCityTags();
   updateCitySearchState();
+  if (selectedCities.length > 0) {
+    scheduleComparisonApply();
+  } else {
+    showWelcomeStub();
+  }
 }
 
 function renderCityTags() {
@@ -268,12 +290,14 @@ function selectPeriodicCity(city) {
   periodicCity = city;
   periodicCitySearchInput.value = formatCityLabel(city);
   periodicCityDropdown.classList.remove('visible');
+  if (state.mode === 'periodic') showModeStub('periodic');
 }
 
 function selectProgressionCity(city) {
   progressionCity = city;
   progressionCitySearchInput.value = formatCityLabel(city);
   progressionCityDropdown.classList.remove('visible');
+  if (state.mode === 'progression') showModeStub('progression');
 }
 
 // --- Year Tags ---
@@ -313,12 +337,14 @@ function addYearTag() {
   renderYearTags();
   updateYearInputState();
   yearInput.value = '';
+  if (state.mode === 'periodic') showModeStub('periodic');
 }
 
 function removeYearTag(index) {
   selectedYears.splice(index, 1);
   renderYearTags();
   updateYearInputState();
+  if (state.mode === 'periodic') showModeStub('periodic');
 }
 
 function renderYearTags() {
@@ -369,13 +395,11 @@ function setupPeriodTypeSelector() {
 
 // --- Apply (data fetch & render) ---
 
-async function apply() {
-  if (state.mode === 'comparison') await applyComparison();
-  else if (state.mode === 'periodic') await applyPeriodic();
-  else if (state.mode === 'progression') await applyProgression();
-}
-
 async function applyComparison() {
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+  }
   const startValue = startInput.value.trim();
   const endValue = endInput.value.trim();
   if (!startValue || !endValue) return showMessage('Fill all fields', 'error');
@@ -835,7 +859,7 @@ async function autoApplyOnLoad() {
   if (state.mode === 'comparison') {
     const hasValidState = state.entities && state.entities.length > 0 && selectedCities.length > 0;
     if (hasValidState) {
-      setTimeout(() => apply(), 100);
+      scheduleComparisonApply(100);
     } else {
       await autoDetectLocation();
     }
@@ -848,7 +872,6 @@ async function autoDetectLocation() {
     if (!selectedCities.some(c => c.name === city.name)) {
       addCityTag(city);
       showMessage(`Detected location: ${city.name}`, 'success');
-      setTimeout(() => apply(), 500);
     }
   } catch (err) {
     console.log('Auto-detect location failed:', err);
@@ -858,15 +881,77 @@ async function autoDetectLocation() {
 // --- UI helpers ---
 
 function showNoDataPlaceholder() {
+  if (selectedCities.length === 0 && state.mode === 'comparison') {
+    showWelcomeStub();
+  } else if (state.mode === 'periodic' || state.mode === 'progression') {
+    showModeStub(state.mode);
+  } else {
+    workspaceDom.classList.add('no-data');
+    hasData = false;
+    updateExportButtons();
+  }
+}
+
+function showDataView() {
+  hideStub();
+  workspaceDom.classList.remove('no-data');
+  hasData = true;
+  updateExportButtons();
+}
+
+function showWelcomeStub() {
+  workspaceStub.innerHTML = `
+    <h2>Grain of Rain</h2>
+    <p>Explore historical weather data for any location on Earth.</p>
+    <p class="stub-hint">Add a city in the toolbar above to get started.</p>
+  `;
+  workspaceStub.classList.remove('hidden');
   workspaceDom.classList.add('no-data');
   hasData = false;
   updateExportButtons();
 }
 
-function showDataView() {
-  workspaceDom.classList.remove('no-data');
-  hasData = true;
+function showModeStub(mode) {
+  const descriptions = {
+    periodic: {
+      title: 'Periodic Comparison',
+      desc: 'Compare the same date range across different years for one city.',
+      notice: 'This mode requests data for each selected year separately.'
+    },
+    progression: {
+      title: 'Year-over-Year Progression',
+      desc: 'Track how weather metrics evolved over a range of years for one location.',
+      notice: 'This mode requests data for every year in the range \u2014 may take a while for large spans.'
+    }
+  };
+  const info = descriptions[mode];
+  const canLoad = mode === 'periodic'
+    ? (periodicCity && selectedYears.length > 0)
+    : (progressionCity && yearFromInput.value && yearToInput.value);
+
+  workspaceStub.innerHTML = `
+    <h2>${info.title}</h2>
+    <p>${info.desc}</p>
+    <p class="stub-hint">${info.notice}</p>
+    ${canLoad ? '<button class="load-data-btn" id="load-data-btn">Load data</button>' : '<p class="stub-hint">Fill in the parameters above to continue.</p>'}
+  `;
+  workspaceStub.classList.remove('hidden');
+  workspaceDom.classList.add('no-data');
+  hasData = false;
   updateExportButtons();
+
+  const loadBtn = document.getElementById('load-data-btn');
+  if (loadBtn) {
+    loadBtn.addEventListener('click', () => {
+      if (mode === 'periodic') applyPeriodic();
+      else if (mode === 'progression') applyProgression();
+    });
+  }
+}
+
+function hideStub() {
+  workspaceStub.classList.add('hidden');
+  workspaceStub.innerHTML = '';
 }
 
 function updateExportButtons() {
@@ -902,6 +987,7 @@ function handleClipboardError(err) {
 }
 
 function resetAll() {
+  clearDailyCache();
   try { localStorage.removeItem('gor:v1'); } catch (err) { console.warn('Failed to clear saved state', err); }
   window.location.reload();
 }

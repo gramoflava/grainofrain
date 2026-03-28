@@ -4,6 +4,9 @@ const ERA_URL = 'https://archive-api.open-meteo.com/v1/era5';
 // In-memory cache for climate normals (keyed by "lat,lon")
 const _normalsCache = new Map();
 
+// In-memory cache for daily data (keyed by "lat,lon|start|end")
+const _dailyCache = new Map();
+
 // Fetch with unlimited retries on 429, using Retry-After header or a fixed 30s wait.
 // Will wait as long as needed — never gives up unless the request is cancelled.
 async function fetchWithRetry(url, options = {}) {
@@ -47,6 +50,9 @@ export async function fetchDaily(lat, lon, start, end, signal) {
   const today = new Date().toISOString().slice(0,10);
   const actualEnd = end > today ? today : end;
 
+  const cacheKey = `${lat.toFixed(4)},${lon.toFixed(4)}|${start}|${actualEnd}`;
+  if (_dailyCache.has(cacheKey)) return _dailyCache.get(cacheKey);
+
   const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,snowfall_water_equivalent_sum,wind_speed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,relative_humidity_2m_mean,wind_speed_10m_mean&timezone=UTC`;
   const res = await fetchWithRetry(url, { signal });
   if (!res.ok) {
@@ -83,7 +89,13 @@ export async function fetchDaily(lat, lon, start, end, signal) {
     humidity.push(entry?.humidity ?? null);
     wind.push(entry?.wind ?? null);
   }
-  return { date: dates, tmin, tmean, tmax, precip, rain, snow, windMax, windGusts, sunshineDur, daylightDur, humidity, wind };
+  const result = { date: dates, tmin, tmean, tmax, precip, rain, snow, windMax, windGusts, sunshineDur, daylightDur, humidity, wind };
+  _dailyCache.set(cacheKey, result);
+  return result;
+}
+
+export function clearDailyCache() {
+  _dailyCache.clear();
 }
 
 // Humidity and wind are now fetched as daily aggregates in fetchDaily.
