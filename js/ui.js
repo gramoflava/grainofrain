@@ -1,7 +1,7 @@
 import { loadState, saveState } from './store.js';
 import { fetchDaily, fetchHourly, dailyMeanFromHourly, fetchNormals, getLocationFromIP } from './api.js';
 import { buildSeries, computeStats } from './transform.js';
-import { initCharts, renderAll, renderCompare } from './charts.js';
+import { initCharts, renderAll, renderCompare, setHydroTab } from './charts.js';
 import { exportPng, copyPngToClipboard } from './export.js';
 import { createCitySelector } from './city-selector.js';
 import { fillStats, fillStatsPeriodic, fillStatsProgression } from './stats.js';
@@ -76,6 +76,15 @@ autoApplyOnLoad();
 window.addEventListener('resize', () => {
   if (charts.temp) charts.temp.resize();
   if (charts.hydro) charts.hydro.resize();
+});
+
+// Sub-chart tab buttons
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    setHydroTab(btn.dataset.tab);
+  });
 });
 
 // --- Mode & Controls ---
@@ -652,10 +661,15 @@ function aggregateProgressionStats(allStats) {
     avgT: average(allStats.map(s => s.avgT).filter(v => isFiniteNumber(v))),
     climateDev: average(allStats.map(s => s.climateDev).filter(v => isFiniteNumber(v))),
     precipTotal: sum(allStats.map(s => s.precipTotal).filter(v => isFiniteNumber(v))),
+    rainTotal: sum(allStats.map(s => s.rainTotal).filter(v => isFiniteNumber(v))),
+    snowTotal: sum(allStats.map(s => s.snowTotal).filter(v => isFiniteNumber(v))),
     precipMax: Math.max(...allStats.map(s => s.precipMax).filter(v => isFiniteNumber(v))),
     humAvg: average(allStats.map(s => s.humAvg).filter(v => isFiniteNumber(v))),
     windMax: Math.max(...allStats.map(s => s.windMax).filter(v => isFiniteNumber(v))),
+    windGustsMax: Math.max(...allStats.map(s => s.windGustsMax).filter(v => isFiniteNumber(v))),
     windAvg: average(allStats.map(s => s.windAvg).filter(v => isFiniteNumber(v))),
+    sunshineTotal: sum(allStats.map(s => s.sunshineTotal).filter(v => isFiniteNumber(v))),
+    daylightTotal: sum(allStats.map(s => s.daylightTotal).filter(v => isFiniteNumber(v))),
     precipDays: sum(allStats.map(s => s.precipDays).filter(v => typeof v === 'number')),
     totalDays: sum(allStats.map(s => s.totalDays).filter(v => typeof v === 'number'))
   };
@@ -664,8 +678,11 @@ function aggregateProgressionStats(allStats) {
 function aggregateSeriesForProgression(allSeries, yearLabels) {
   const aggregated = {
     x: yearLabels,
+    dates: yearLabels,
     tempMax: [], tempMin: [], tempMean: [],
-    precip: [], humidity: [], wind: [], windMax: [],
+    precip: [], rain: [], snow: [],
+    humidity: [], wind: [], windMax: [], windGusts: [],
+    sunshineDuration: [], daylightDuration: [],
     norm: null
   };
 
@@ -680,9 +697,14 @@ function aggregateSeriesForProgression(allSeries, yearLabels) {
     aggregated.tempMin.push(arrayMin(series.tempMin));
     aggregated.tempMean.push(arrayMean(series.tempMean));
     aggregated.precip.push(arraySum(series.precip));
+    aggregated.rain.push(arraySum(series.rain || []));
+    aggregated.snow.push(arraySum(series.snow || []));
     aggregated.humidity.push(arrayMean(series.humidity));
     aggregated.wind.push(arrayMean(series.wind));
-    aggregated.windMax.push(arrayMax(series.wind));
+    aggregated.windMax.push(arrayMax(series.windMax || series.wind));
+    aggregated.windGusts.push(arrayMax(series.windGusts || []));
+    aggregated.sunshineDuration.push(arrayMean(series.sunshineDuration || []));
+    aggregated.daylightDuration.push(arrayMean(series.daylightDuration || []));
   });
 
   return aggregated;

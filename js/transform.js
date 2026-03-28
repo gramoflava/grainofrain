@@ -2,6 +2,10 @@ export function buildSeries(daily, humidityAgg, windAgg, normals) {
   const alignedHumidity = alignAggregates(daily.date, humidityAgg);
   const alignedWind = alignAggregates(daily.date, windAgg);
   const normSeries = normals ? mapNormalsToDates(daily.date, normals) : null;
+  const n = daily.date.length;
+  // Convert sunshine/daylight from seconds to hours
+  const sunshineDuration = (daily.sunshineDur || new Array(n).fill(null)).map(v => v !== null ? v / 3600 : null);
+  const daylightDuration = (daily.daylightDur || new Array(n).fill(null)).map(v => v !== null ? v / 3600 : null);
   return {
     x: daily.date,
     dates: daily.date,
@@ -9,9 +13,14 @@ export function buildSeries(daily, humidityAgg, windAgg, normals) {
     tempMean: daily.tmean,
     tempMax: daily.tmax,
     precip: daily.precip,
+    rain: daily.rain || new Array(n).fill(null),
+    snow: daily.snow || new Array(n).fill(null),
     humidity: alignedHumidity,
     wind: alignedWind,
     windMax: daily.windMax,
+    windGusts: daily.windGusts || new Array(n).fill(null),
+    sunshineDuration,
+    daylightDuration,
     norm: normSeries
   };
 }
@@ -24,10 +33,15 @@ export function computeStats(series) {
   const precipTotal = sum(precipValues);
   const precipDays = precipValues.filter(v => v > 0.1).length;
   const precipMax = max(series.precip);
+  const rainTotal = sum(filterNumbers(series.rain || []));
+  const snowTotal = sum(filterNumbers(series.snow || []));
   const humAvg = avg(series.humidity);
   const windAvg = avg(series.wind);
   const windCandidates = series.windMax && series.windMax.length ? series.windMax : series.wind;
   const windMax = max(windCandidates);
+  const windGustsMax = max(series.windGusts || []);
+  const sunshineTotal = sum(filterNumbers(series.sunshineDuration || []));
+  const daylightTotal = sum(filterNumbers(series.daylightDuration || []));
   const totalDays = series.dates ? series.dates.length : 0;
   let climateDev = null;
   if (series.norm) {
@@ -43,7 +57,7 @@ export function computeStats(series) {
       climateDev = diffs.reduce((a, b) => a + b, 0) / diffs.length;
     }
   }
-  return { minT, maxT, avgT, climateDev, precipTotal, precipDays, precipMax, humAvg, windAvg, windMax, totalDays };
+  return { minT, maxT, avgT, climateDev, precipTotal, precipDays, precipMax, rainTotal, snowTotal, humAvg, windAvg, windMax, windGustsMax, sunshineTotal, daylightTotal, totalDays };
 }
 
 function alignAggregates(dates, aggregate) {

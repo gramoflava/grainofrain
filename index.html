@@ -185,12 +185,16 @@
     <div id="workspace">
       <section id="charts" aria-label="Forecast charts">
         <div class="chart-card">
-          <header>Temperature · Climate Norm · Wind</header>
+          <header>Temperature · Climate Norm</header>
           <div id="chart-temp" class="chart" role="img" aria-label="Temperature chart"></div>
         </div>
         <div class="chart-card">
-          <header>Precipitation · Humidity</header>
-          <div id="chart-hydro" class="chart" role="img" aria-label="Hydrology chart"></div>
+          <header class="chart-header-tabs">
+            <button class="tab-btn active" data-tab="hydro">Humidity · Precip</button>
+            <button class="tab-btn" data-tab="sun">Sunshine</button>
+            <button class="tab-btn" data-tab="wind">Wind</button>
+          </header>
+          <div id="chart-hydro" class="chart" role="img" aria-label="Sub chart"></div>
         </div>
       </section>
       <aside id="panel">

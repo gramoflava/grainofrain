@@ -172,6 +172,40 @@ main.container-fluid {
   min-height: 0;
 }
 
+.chart-header-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.5rem !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.tab-btn {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.tab-btn.active {
+  color: var(--text-primary);
+  background: var(--bg-alt);
+  border-color: var(--border-color);
+}
+
 #panel {
   flex: 1;
   display: flex;

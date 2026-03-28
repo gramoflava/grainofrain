@@ -18,6 +18,10 @@ function formatWind(value) {
   return isFiniteNumber(value) ? `${value.toFixed(1)} km/h` : 'n/a';
 }
 
+function formatHours(value) {
+  return isFiniteNumber(value) ? `${value.toFixed(0)} h` : 'n/a';
+}
+
 function formatDeviation(value) {
   if (!isFiniteNumber(value)) return 'n/a';
   const sign = value > 0 ? '+' : '';
@@ -31,12 +35,17 @@ function buildMetrics(smoothingActive) {
     { key: 'avgT', label: `T~${asterisk}`, tooltip: 'Average temperature', format: formatTemp },
     { key: 'minT', label: 'T↓', tooltip: 'Minimum temperature', format: formatTemp },
     { key: 'climateDev', label: 'ΔT', tooltip: 'Temperature deviation from climate norm', format: formatDeviation },
-    { key: 'precipTotal', label: '∑ Rain', tooltip: 'Total precipitation', format: formatPrecip },
-    { key: 'precipMax', label: 'Rain↑', tooltip: 'Maximum daily precipitation', format: formatPrecip },
+    { key: 'precipTotal', label: '∑ Precip', tooltip: 'Total precipitation (rain + snow)', format: formatPrecip },
+    { key: 'rainTotal', label: '∑ Rain', tooltip: 'Total rainfall', format: formatPrecip },
+    { key: 'snowTotal', label: '∑ Snow', tooltip: 'Total snowfall (water equivalent)', format: formatPrecip },
+    { key: 'precipMax', label: 'Precip↑', tooltip: 'Maximum daily precipitation', format: formatPrecip },
     { key: 'humAvg', label: `RH%${asterisk}`, tooltip: 'Average relative humidity', format: formatPercent },
     { key: 'windMax', label: 'Wind↑', tooltip: 'Maximum wind speed', format: formatWind },
+    { key: 'windGustsMax', label: 'Gusts↑', tooltip: 'Maximum wind gusts', format: formatWind },
     { key: 'windAvg', label: 'Wind~', tooltip: 'Average wind speed', format: formatWind },
-    { key: 'precipDays', label: 'Rain days', tooltip: 'Days with precipitation >0.1mm', format: v => v },
+    { key: 'sunshineTotal', label: '∑ Sunshine', tooltip: 'Total sunshine hours', format: formatHours },
+    { key: 'daylightTotal', label: '∑ Daylight', tooltip: 'Total daylight hours', format: formatHours },
+    { key: 'precipDays', label: 'Precip days', tooltip: 'Days with precipitation >0.1mm', format: v => v },
     { key: 'totalDays', label: '∑ Days', tooltip: 'Total days in period', format: v => v }
   ];
 }

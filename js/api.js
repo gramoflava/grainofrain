@@ -23,7 +23,7 @@ export async function fetchDaily(lat, lon, start, end, signal) {
   const today = new Date().toISOString().slice(0,10);
   const actualEnd = end > today ? today : end;
 
-  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,windspeed_10m_max&timezone=UTC`;
+  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,snowfall_water_equivalent_sum,windspeed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration&timezone=UTC`;
   const res = await fetch(url, { signal });
   if (!res.ok) {
     if (res.status === 429) {
@@ -39,16 +39,26 @@ export async function fetchDaily(lat, lon, start, end, signal) {
   const tmean = [];
   const tmax = [];
   const precip = [];
+  const rain = [];
+  const snow = [];
   const windMax = [];
+  const windGusts = [];
+  const sunshineDur = [];
+  const daylightDur = [];
   for (const d of dates) {
     const entry = map.get(d);
     tmin.push(entry?.tmin ?? null);
     tmean.push(entry?.tmean ?? null);
     tmax.push(entry?.tmax ?? null);
     precip.push(entry?.precip ?? null);
+    rain.push(entry?.rain ?? null);
+    snow.push(entry?.snow ?? null);
     windMax.push(entry?.windMax ?? null);
+    windGusts.push(entry?.windGusts ?? null);
+    sunshineDur.push(entry?.sunshineDur ?? null);
+    daylightDur.push(entry?.daylightDur ?? null);
   }
-  return { date: dates, tmin, tmean, tmax, precip, windMax };
+  return { date: dates, tmin, tmean, tmax, precip, rain, snow, windMax, windGusts, sunshineDur, daylightDur };
 }
 
 export async function fetchHourly(lat, lon, start, end, signal) {
@@ -143,7 +153,12 @@ function buildDailyMap(daily) {
   const tmean = Array.isArray(daily.temperature_2m_mean) ? daily.temperature_2m_mean : [];
   const tmax = Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max : [];
   const precip = Array.isArray(daily.precipitation_sum) ? daily.precipitation_sum : [];
+  const rain = Array.isArray(daily.rain_sum) ? daily.rain_sum : [];
+  const snow = Array.isArray(daily.snowfall_water_equivalent_sum) ? daily.snowfall_water_equivalent_sum : [];
   const windMax = Array.isArray(daily.windspeed_10m_max) ? daily.windspeed_10m_max : [];
+  const windGusts = Array.isArray(daily.wind_gusts_10m_max) ? daily.wind_gusts_10m_max : [];
+  const sunshineDur = Array.isArray(daily.sunshine_duration) ? daily.sunshine_duration : [];
+  const daylightDur = Array.isArray(daily.daylight_duration) ? daily.daylight_duration : [];
   const map = new Map();
   for (let i = 0; i < time.length; i++) {
     map.set(time[i], {
@@ -151,7 +166,12 @@ function buildDailyMap(daily) {
       tmean: toNumberOrNull(tmean[i]),
       tmax: toNumberOrNull(tmax[i]),
       precip: toNumberOrNull(precip[i]),
-      windMax: toNumberOrNull(windMax[i])
+      rain: toNumberOrNull(rain[i]),
+      snow: toNumberOrNull(snow[i]),
+      windMax: toNumberOrNull(windMax[i]),
+      windGusts: toNumberOrNull(windGusts[i]),
+      sunshineDur: toNumberOrNull(sunshineDur[i]),
+      daylightDur: toNumberOrNull(daylightDur[i])
     });
   }
   return map;
