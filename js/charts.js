@@ -15,8 +15,8 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
   const narrow = window.innerWidth <= 480;
   const gridLeft = narrow ? 36 : 56;
   const gridRight = narrow ? 12 : 32;
-  const gridTop = { left: gridLeft, right: gridRight, top: 16, bottom: 24, containLabel: true };
-  const gridBottom = { left: gridLeft, right: gridRight, top: 16, bottom: 24, containLabel: true };
+  const gridTop = { left: gridLeft, right: gridRight, top: 16, bottom: 30, containLabel: true };
+  const gridBottom = { left: gridLeft, right: gridRight, top: 16, bottom: 30, containLabel: true };
 
   const smoothingActive = (prefs.smoothing || 0) > 0;
   const asterisk = smoothingActive ? '*' : '';
@@ -41,6 +41,8 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
 
   const tooltip = {
     trigger: 'axis',
+    confine: true,
+    transitionDuration: 0.2,
     backgroundColor: tooltipBg,
     borderColor: tooltipBorder,
     textStyle: { color: tooltipText },
@@ -128,7 +130,12 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
       stackStrategy: 'all',
       showSymbol: false,
       lineStyle: { width: 0 },
-      areaStyle: { color: color, opacity: 0.18 },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: color + '33' },
+          { offset: 1, color: color + '05' }
+        ])
+      },
       tooltip: { show: false }
     }
   ];
@@ -159,6 +166,24 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     legend: { show: false },
     grid: gridTop,
     tooltip,
+    
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: [0],
+        filterMode: 'filter'
+      },
+      {
+        type: 'slider',
+        xAxisIndex: [0],
+        filterMode: 'filter',
+        height: 16,
+        bottom: 4,
+        handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+        handleSize: '80%',
+        showDetail: false
+      }
+    ],
     xAxis: baseXAxis,
     yAxis: [
       {
@@ -197,6 +222,24 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
     legend: { show: false },
     grid: gridBottom,
     tooltip,
+    
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: [0],
+        filterMode: 'filter'
+      },
+      {
+        type: 'slider',
+        xAxisIndex: [0],
+        filterMode: 'filter',
+        height: 16,
+        bottom: 4,
+        handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+        handleSize: '80%',
+        showDetail: false
+      }
+    ],
     xAxis: baseXAxis,
     yAxis: [
       {
@@ -247,7 +290,12 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
         yAxisIndex: 1,
         showSymbol: false,
         lineStyle: { width: 0 },
-        areaStyle: { color: 'rgba(67,160,71,0.2)' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(67,160,71,0.3)' },
+            { offset: 1, color: 'rgba(67,160,71,0.05)' }
+          ])
+        },
         tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} %` : value) }
       }
     ]
@@ -260,8 +308,8 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
   const narrow = window.innerWidth <= 480;
   const gridLeft = narrow ? 36 : 56;
   const gridRight = narrow ? 12 : 32;
-  const gridTop = { left: gridLeft, right: gridRight, top: 16, bottom: 24, containLabel: true };
-  const gridBottom = { left: gridLeft, right: gridRight, top: 16, bottom: 24, containLabel: true };
+  const gridTop = { left: gridLeft, right: gridRight, top: 16, bottom: 30, containLabel: true };
+  const gridBottom = { left: gridLeft, right: gridRight, top: 16, bottom: 30, containLabel: true };
 
   const smoothingActive = (prefs.smoothing || 0) > 0;
   const asterisk = smoothingActive ? '*' : '';
@@ -288,6 +336,8 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
   // Custom tooltip formatter to show only main series with colored markers
   const tooltip = {
     trigger: 'axis',
+    confine: true,
+    transitionDuration: 0.2,
     backgroundColor: tooltipBg,
     borderColor: tooltipBorder,
     textStyle: { color: tooltipText },
@@ -454,7 +504,12 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
       yAxisIndex: 1,
       showSymbol: false,
       lineStyle: { color: color, width: 1 },
-      areaStyle: { color: color, opacity: 0.15 },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: color + '33' },
+          { offset: 1, color: color + '05' }
+        ])
+      },
       tooltip: { valueFormatter: value => (typeof value === 'number' ? `${value.toFixed(1)} %` : value) }
     });
   });
@@ -464,6 +519,24 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     legend: { show: false },
     grid: gridTop,
     tooltip,
+    
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: [0],
+        filterMode: 'filter'
+      },
+      {
+        type: 'slider',
+        xAxisIndex: [0],
+        filterMode: 'filter',
+        height: 16,
+        bottom: 4,
+        handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+        handleSize: '80%',
+        showDetail: false
+      }
+    ],
     xAxis: baseXAxis,
     yAxis: [
       {
@@ -508,6 +581,24 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
     legend: { show: false },
     grid: gridBottom,
     tooltip,
+    
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: [0],
+        filterMode: 'filter'
+      },
+      {
+        type: 'slider',
+        xAxisIndex: [0],
+        filterMode: 'filter',
+        height: 16,
+        bottom: 4,
+        handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+        handleSize: '80%',
+        showDetail: false
+      }
+    ],
     xAxis: baseXAxis,
     yAxis: [
       {
