@@ -98,6 +98,8 @@ main.container-fluid {
 }
 
 #config-bar {
+  position: relative;
+  z-index: 100;
   background: var(--bg-card);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -1230,6 +1232,7 @@ input[type="date"]::-webkit-datetime-edit-text {
   padding: 0.5rem 0.8rem;
   box-shadow: var(--shadow-sm);
   margin: 0;
+}
 }
 
 /* Landscape orientation on small devices */

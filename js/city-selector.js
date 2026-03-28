@@ -57,7 +57,8 @@ function displaySuggestions(cities, dropdown, onSelect) {
   }).join('');
 
   dropdown.querySelectorAll('.city-option').forEach(option => {
-    option.addEventListener('click', () => {
+    option.addEventListener('mousedown', (e) => {
+      e.preventDefault();
       const cityKey = option.getAttribute('data-city-key');
       const city = cityCache.get(cityKey);
       if (city) onSelect(city);
