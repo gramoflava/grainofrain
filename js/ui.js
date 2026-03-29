@@ -986,8 +986,8 @@ function handleClipboardError(err) {
   showMessage(message, 'error');
 }
 
-function resetAll() {
-  clearDailyCache();
+async function resetAll() {
+  await clearDailyCache();
   try { localStorage.removeItem('gor:v1'); } catch (err) { console.warn('Failed to clear saved state', err); }
   window.location.reload();
 }

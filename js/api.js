@@ -1,10 +1,13 @@
+import { getCache, setCache, clearCache } from './cache.js';
+
 const GEO_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const ERA_URL = 'https://archive-api.open-meteo.com/v1/era5';
 
 // In-memory cache for climate normals (keyed by "lat,lon")
 const _normalsCache = new Map();
 
-// In-memory cache for daily data (keyed by "lat,lon|start|end")
+// L1 in-memory cache for daily data (keyed by "lat,lon|start|end")
+// L2 is IndexedDB via cache.js — checked on miss, populated on fetch
 const _dailyCache = new Map();
 
 // Fetch with unlimited retries on 429, using Retry-After header or a fixed 30s wait.
@@ -51,7 +54,16 @@ export async function fetchDaily(lat, lon, start, end, signal) {
   const actualEnd = end > today ? today : end;
 
   const cacheKey = `${lat.toFixed(4)},${lon.toFixed(4)}|${start}|${actualEnd}`;
+
+  // L1: in-memory
   if (_dailyCache.has(cacheKey)) return _dailyCache.get(cacheKey);
+
+  // L2: IndexedDB persistent cache
+  const persisted = await getCache(cacheKey);
+  if (persisted) {
+    _dailyCache.set(cacheKey, persisted);
+    return persisted;
+  }
 
   const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${actualEnd}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,snowfall_water_equivalent_sum,wind_speed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,relative_humidity_2m_mean,wind_speed_10m_mean&timezone=UTC`;
   const res = await fetchWithRetry(url, { signal });
@@ -91,11 +103,13 @@ export async function fetchDaily(lat, lon, start, end, signal) {
   }
   const result = { date: dates, tmin, tmean, tmax, precip, rain, snow, windMax, windGusts, sunshineDur, daylightDur, humidity, wind };
   _dailyCache.set(cacheKey, result);
+  setCache(cacheKey, result); // fire-and-forget: persist to IndexedDB
   return result;
 }
 
-export function clearDailyCache() {
+export async function clearDailyCache() {
   _dailyCache.clear();
+  await clearCache();
 }
 
 // Humidity and wind are now fetched as daily aggregates in fetchDaily.
