@@ -166,7 +166,7 @@ function _renderTempChart(ch, series, color, prefs, label, asterisk) {
     { name: 'T↑', type: 'line', data: series.tempMax, symbol: 'none', lineStyle: { color: '#EF5350', width: focusCfg.lineW[0] }, tooltip: { valueFormatter: valueFmt }, markLine: focus === 'max' ? monthML : undefined },
     { name: `T~${asterisk}`, type: 'line', data: series.tempMean, symbol: 'none', lineStyle: { color: '#0D47A1', width: focusCfg.lineW[1] }, tooltip: { valueFormatter: valueFmt }, markLine: focus === 'mean' ? monthML : undefined },
     { name: 'T↓', type: 'line', data: series.tempMin, symbol: 'none', stack: 'temp-range', stackStrategy: 'all', lineStyle: { color: '#1E88E5', width: focusCfg.lineW[2] }, tooltip: { valueFormatter: valueFmt }, markLine: focus === 'min' ? monthML : undefined },
-    { name: 'Temp Range', type: 'line', data: tempRange, stack: 'temp-range', stackStrategy: 'all', showSymbol: false, lineStyle: { width: 0 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: color + '33' }, { offset: 1, color: color + '05' }]) }, tooltip: { show: false } }
+    { name: 'Temp Range', type: 'line', data: tempRange, stack: 'temp-range', stackStrategy: 'all', showSymbol: false, lineStyle: { width: 0 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: focusCfg.lineColor + '33' }, { offset: 1, color: focusCfg.lineColor + '05' }]) }, tooltip: { show: false } }
   ];
 
   if (focusCfg.norm) {
@@ -319,7 +319,8 @@ function _renderHydroTab(ch, allSeries, colors, labels, isCompare, x, grid, grid
         }
         let unit = '';
         let markerColor = '';
-        if (name.startsWith('Rain') || name.startsWith('∑ Precip')) { unit = ' mm'; markerColor = cityColor; }
+        if (name.startsWith('Rain')) { unit = ' mm'; markerColor = 'rgba(66,133,244,0.80)'; }
+        else if (name.startsWith('∑ Precip')) { unit = ' mm'; markerColor = cityColor; }
         else if (name.startsWith('Snow')) { unit = ' mm'; markerColor = '#aab8cc'; }
         else if (name.startsWith('RH%')) { unit = ' %'; }
         const marker = markerColor
@@ -358,7 +359,7 @@ function _renderHydroTab(ch, allSeries, colors, labels, isCompare, x, grid, grid
     series.push({
       name: 'Rain', type: 'bar', stack: 'precip', data: s.rain,
       yAxisIndex: 0, barWidth: '55%',
-      itemStyle: { color: `${color}CC` },
+      itemStyle: { color: 'rgba(66,133,244,0.80)' },
       tooltip: { valueFormatter: v => (typeof v === 'number' ? `${v.toFixed(1)} mm` : v) }
     });
     series.push({
