@@ -11,10 +11,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=2" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script type="module" src="./js/ui.js"></script>
+  <script type="module" src="./js/ui.js?v=2"></script>
 </head>
 <body>
   <main class="container-fluid">
@@ -25,6 +25,7 @@
             <option value="comparison">Overview</option>
             <option value="periodic">Periodic</option>
             <option value="progression">Progression</option>
+            <option value="rawdata">Raw Data</option>
           </select>
 
           <select id="smoothing-selector" aria-label="Smoothing">
@@ -183,6 +184,7 @@
 
     <div id="workspace">
       <div id="workspace-stub" class="workspace-stub hidden"></div>
+      <div id="rdm-container" class="rdm-container hidden"></div>
       <section id="charts" aria-label="Forecast charts">
         <div class="chart-card">
           <header>Temperature · Climate Norm</header>

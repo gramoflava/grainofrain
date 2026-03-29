@@ -1,5 +1,7 @@
 import { loadState, saveState } from './store.js';
 import { fetchDaily, fetchNormals, getLocationFromIP, clearDailyCache } from './api.js';
+import { initRawDataMode, destroyRawDataMode } from './rawdata.js';
+import { saveLocation } from './locations.js';
 import { buildSeries, computeStats } from './transform.js';
 import { initCharts, renderAll, renderCompare, setHydroTab } from './charts.js';
 import { exportPng, copyPngToClipboard } from './export.js';
@@ -42,6 +44,7 @@ const endInput = document.getElementById('end');
 const statsDom = document.getElementById('stats');
 const workspaceDom = document.getElementById('workspace');
 const workspaceStub = document.getElementById('workspace-stub');
+const rdmContainer = document.getElementById('rdm-container');
 const citySearchInput = document.getElementById('city-search');
 const cityTagsContainer = document.getElementById('city-tags');
 const cityDropdown = document.getElementById('city-dropdown');
@@ -154,6 +157,25 @@ function switchMode(mode) {
   hasData = false;
   updateExportButtons();
 
+  const isRawData = mode === 'rawdata';
+  const chartsDom = document.getElementById('charts');
+  const panelDom  = document.getElementById('panel');
+
+  if (isRawData) {
+    if (chartsDom) chartsDom.style.display = 'none';
+    if (panelDom)  panelDom.style.display  = 'none';
+    workspaceStub.classList.add('hidden');
+    rdmContainer.classList.remove('hidden');
+    initRawDataMode(rdmContainer);
+    return;
+  }
+
+  // Leaving rawdata mode — restore charts/panel
+  destroyRawDataMode();
+  if (chartsDom) chartsDom.style.display = '';
+  if (panelDom)  panelDom.style.display  = '';
+  rdmContainer.classList.add('hidden');
+
   if (mode === 'comparison') {
     comparisonControls.classList.remove('hidden');
     if (selectedCities.length > 0 && startInput.value && endInput.value) {
@@ -238,6 +260,7 @@ function addCityTag(city) {
   if (selectedCities.length >= MAX_CITIES) return;
   if (selectedCities.some(c => c.name === city.name)) return;
 
+  saveLocation(city.lat, city.lon, city);
   selectedCities.push(city);
   renderCityTags();
   updateCitySearchState();
@@ -287,6 +310,7 @@ function updateCitySearchState() {
 }
 
 function selectPeriodicCity(city) {
+  saveLocation(city.lat, city.lon, city);
   periodicCity = city;
   periodicCitySearchInput.value = formatCityLabel(city);
   periodicCityDropdown.classList.remove('visible');
@@ -294,6 +318,7 @@ function selectPeriodicCity(city) {
 }
 
 function selectProgressionCity(city) {
+  saveLocation(city.lat, city.lon, city);
   progressionCity = city;
   progressionCitySearchInput.value = formatCityLabel(city);
   progressionCityDropdown.classList.remove('visible');
@@ -989,6 +1014,7 @@ function handleClipboardError(err) {
 async function resetAll() {
   await clearDailyCache();
   try { localStorage.removeItem('gor:v1'); } catch (err) { console.warn('Failed to clear saved state', err); }
+  try { localStorage.removeItem('gor-locations'); } catch { /* ignore */ }
   window.location.reload();
 }
 
