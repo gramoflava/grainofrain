@@ -433,7 +433,7 @@ function _renderChart(dates, values, cityName, paramMeta, yearRange) {
   _chart.setOption({
     animation: false,
     backgroundColor: 'transparent',
-    grid: { top: 20, right: 16, bottom: 56, left: 56 },
+    grid: { top: 20, right: 16, bottom: 24, left: 56 },
     xAxis: {
       type: 'time',
       axisLabel: { formatter: v => new Date(v).getFullYear().toString(), color: '#64748b', fontSize: 11 },
@@ -455,16 +455,7 @@ function _renderChart(dates, values, cityName, paramMeta, yearRange) {
       emphasis: { disabled: true }
     }],
     dataZoom: [
-      { type: 'inside', xAxisIndex: [0], filterMode: 'filter' },
-      {
-        type: 'slider', xAxisIndex: [0], filterMode: 'filter',
-        height: 16, bottom: 4,
-        handleIcon: 'path://M10,30 A20,20,0,0,1,50,30 A20,20,0,0,1,90,30 Q90,60,50,90 Q10,60,10,30 Z',
-        handleSize: '80%',
-        showDetail: false,
-        filledColor: 'rgba(30,136,229,0.15)',
-        borderColor: 'rgba(203,213,225,0.5)'
-      }
+      { type: 'inside', xAxisIndex: [0], filterMode: 'filter' }
     ],
     tooltip: {
       trigger: 'axis',

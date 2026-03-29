@@ -57,17 +57,9 @@ function _baseXAxis(x) {
   };
 }
 
-function _dataZoom(sliderSeriesIndex) {
-  const slider = {
-    type: 'slider', xAxisIndex: [0], filterMode: 'filter',
-    height: 16, bottom: 4,
-    handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
-    handleSize: '80%', showDetail: false
-  };
-  if (sliderSeriesIndex !== undefined) slider.seriesIndex = sliderSeriesIndex;
+function _dataZoom() {
   return [
-    { type: 'inside', xAxisIndex: [0], filterMode: 'filter' },
-    slider
+    { type: 'inside', xAxisIndex: [0], filterMode: 'filter' }
   ];
 }
 
@@ -143,7 +135,7 @@ function _renderTempChart(ch, series, color, prefs, label, asterisk) {
 
   ch.temp.setOption({
     animation: false, legend: { show: false },
-    grid: { left, right, top: 16, bottom: 30, containLabel: true },
+    grid: { left, right, top: 16, bottom: 4, containLabel: true },
     tooltip, dataZoom: _dataZoom(),
     xAxis: _baseXAxis(x),
     yAxis: [
@@ -217,7 +209,7 @@ function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk)
 
   ch.temp.setOption({
     animation: false, legend: { show: false },
-    grid: { left, right, top: 16, bottom: 30, containLabel: true },
+    grid: { left, right, top: 16, bottom: 4, containLabel: true },
     tooltip, dataZoom: _dataZoom(),
     xAxis: _baseXAxis(x),
     yAxis: [
@@ -234,7 +226,7 @@ function _renderHydroChart(ch, allSeries, colors, prefs, labels, isCompare) {
   const { isDark, gridColor, axisLabelColor, tooltipBg, tooltipBorder, tooltipText, snowColor } = _themeVars();
   const { left, right } = _gridSizes();
   const x = allSeries[0].x;
-  const grid = { left, right, top: 16, bottom: 30, containLabel: true };
+  const grid = { left, right, top: 16, bottom: 4, containLabel: true };
 
   const baseTooltip = {
     trigger: 'axis', confine: true, transitionDuration: 0.2,
@@ -337,7 +329,7 @@ function _renderHydroTab(ch, allSeries, colors, labels, isCompare, x, grid, grid
 
   ch.hydro.setOption({
     animation: false, legend: { show: false },
-    grid, tooltip, dataZoom: _dataZoom(precipZoomIdx),
+    grid, tooltip, dataZoom: _dataZoom(),
     xAxis: _baseXAxis(x),
     yAxis: [
       {
