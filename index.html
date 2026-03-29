@@ -21,14 +21,14 @@
     <header id="config-bar">
       <form id="controls" aria-label="Data configuration">
         <div class="controls-row">
-          <select id="mode-selector" aria-label="Analysis mode">
+          <select id="mode-selector" class="hide-md" aria-label="Analysis mode">
             <option value="comparison">Overview</option>
             <option value="periodic">Periodic</option>
             <option value="progression">Progression</option>
             <option value="rawdata">Raw Data</option>
           </select>
 
-          <select id="smoothing-selector" aria-label="Smoothing">
+          <select id="smoothing-selector" class="hide-md" aria-label="Smoothing">
             <option value="0">No smoothing</option>
             <option value="5">5 days</option>
             <option value="14">14 days</option>
@@ -173,13 +173,37 @@
             <button id="download" type="button" class="icon-btn" title="Download charts">
               <img src="icons/download.svg" alt="Download" width="20" height="20">
             </button>
-            <button id="reset" type="button" class="icon-btn danger" title="Reset app">
+            <button id="reset" type="button" class="icon-btn danger hide-md" title="Reset app">
               <img src="icons/reset.svg" alt="Reset" width="20" height="20">
+            </button>
+            <button id="overflow-btn" type="button" class="icon-btn overflow-btn" title="More options" aria-expanded="false">
+              <img src="icons/dots.svg" alt="More" width="20" height="20">
             </button>
           </div>
 
         </div>
       </form>
+
+      <!-- Overflow panel for collapsed controls -->
+      <div id="overflow-panel" class="overflow-panel hidden">
+        <div class="overflow-row">
+          <select id="mode-selector-ov" aria-label="Analysis mode">
+            <option value="comparison">Overview</option>
+            <option value="periodic">Periodic</option>
+            <option value="progression">Progression</option>
+            <option value="rawdata">Raw Data</option>
+          </select>
+          <select id="smoothing-selector-ov" aria-label="Smoothing">
+            <option value="0">No smoothing</option>
+            <option value="5">5 days</option>
+            <option value="14">14 days</option>
+          </select>
+          <button id="reset-ov" type="button" class="icon-btn danger" title="Reset app">
+            <img src="icons/reset.svg" alt="Reset" width="20" height="20">
+          </button>
+        </div>
+        <div id="overflow-tags" class="overflow-tags"></div>
+      </div>
     </header>
 
     <div id="workspace">

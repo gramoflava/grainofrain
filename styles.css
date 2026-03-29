@@ -651,9 +651,16 @@ input[type="date"]::-webkit-datetime-edit-text {
   width: 100%;
 }
 
+.date-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
 #start, #end {
-  width: 132px !important;
-  flex: 0 0 auto;
+  width: 120px;
+  flex: 1 1 80px;
+  min-width: 70px;
 }
 
 /* Mode controls */
@@ -1068,11 +1075,6 @@ input[type="date"]::-webkit-datetime-edit-text {
     flex: none;
   }
 
-  .controls-row {
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
   #stats .stats-table {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
@@ -1164,69 +1166,150 @@ input[type="date"]::-webkit-datetime-edit-text {
     font-size: 0.75rem;
   }
 
-  /* Grid Layout for controls on mobile */
-  .controls-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-gap: 0.5rem;
-    align-items: center;
-  }
-
-  /* Full width selectors */
-  #mode-selector,
-  #smoothing-selector {
-    grid-column: span 1;
-    width: 100%;
-  }
-
-  .mode-controls {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  /* Elements inside mode-controls take full width */
-  .city-tags-container,
-  .year-tags-container,
-  .city-input-wrapper {
-    width: 100%;
-  }
-
-  .city-search-input {
-    flex: 1;
-    width: 100%;
-  }
-
-  .date-row {
-    display: flex;
-    gap: 0.5rem;
-    width: 100%;
-  }
-
-  .date-row input {
-    flex: 1;
-    width: 100% !important;
-  }
-
-  #period-type {
-    width: 100%;
-  }
-
-  #season-select,
-  #month-select,
-  #day-select {
-    width: 100% !important;
-  }
-
-  .action-buttons {
-    grid-column: 1 / span 1;
-    justify-content: flex-start;
-  }
-
   .spacer {
     display: none;
   }
+}
+
+/* ========================================
+   Responsive Single-Line Header
+   ======================================== */
+
+/* Overflow button: hidden on desktop */
+.overflow-btn {
+  display: none !important;
+}
+
+/* At < 1000px: hide low-priority items, show overflow button */
+@media (max-width: 999px) {
+  .hide-md {
+    display: none !important;
+  }
+
+  .overflow-btn {
+    display: inline-flex !important;
+  }
+
+  /* Truncate tag names at medium-narrow widths */
+  .city-tag-name,
+  .year-tag-name {
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* At very narrow: hide tag name text, show just colored dot */
+@media (max-width: 699px) {
+  .city-tag-name,
+  .year-tag-name {
+    display: none;
+  }
+
+  .city-tag,
+  .year-tag {
+    padding: 0.2rem;
+    min-width: 14px;
+    min-height: 14px;
+  }
+}
+
+/* Overflow panel: drops below config-bar (position: relative already set in base) */
+.overflow-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  padding: 0.5rem 0.8rem;
+}
+
+.overflow-panel.hidden {
+  display: none;
+}
+
+.overflow-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.overflow-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  min-height: 0;
+}
+
+.overflow-tags:empty {
+  display: none;
+}
+
+/* In overflow panel, show full tag names */
+.overflow-panel .city-tag-name,
+.overflow-panel .year-tag-name {
+  max-width: none !important;
+  display: inline !important;
+}
+
+/* Style overflow selects like main bar selects */
+#overflow-panel select {
+  padding: 0.25rem 0.4rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* ========================================
+   Color Picker
+   ======================================== */
+
+#color-picker {
+  position: fixed;
+  z-index: 1000;
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.4rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  width: 148px;
+}
+
+#color-picker.hidden {
+  display: none;
+}
+
+.color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+  outline: none;
+}
+
+.color-swatch:hover {
+  transform: scale(1.2);
+}
+
+.color-swatch.active {
+  border-color: var(--text-primary);
 }
 
 /* Ko-fi Widget */

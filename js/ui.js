@@ -15,8 +15,16 @@ import {
   applySmoothingAndTrim, detectPlatform
 } from './utils.js';
 
-const COLORS = ['#1E88E5', '#E53935', '#43A047'];
-const COLOR_NAMES = ['blue', 'red', 'green'];
+const COLOR_PALETTE = [
+  '#1E88E5', // blue
+  '#FB8C00', // orange
+  '#8E24AA', // purple
+  '#00ACC1', // teal
+  '#E53935', // red
+  '#43A047', // green
+  '#F9A825', // amber
+  '#3949AB', // indigo
+];
 const MM_DD_REGEX = /^\d{2}-\d{2}$/;
 const MAX_CITIES = 3;
 
@@ -68,6 +76,8 @@ prefillInputs();
 bindControls();
 setupModeSelector();
 setupSmoothingSelector();
+setupOverflowBtn();
+setupColorPicker();
 setupTempFocusSwitch();
 setupCitySelectors();
 setupYearTagSelector();
@@ -134,6 +144,8 @@ function setupModeSelector() {
     state.mode = e.target.value;
     switchMode(state.mode);
     updateSmoothingVisibility();
+    const modeOv = document.getElementById('mode-selector-ov');
+    if (modeOv) modeOv.value = e.target.value;
   });
 }
 
@@ -147,6 +159,8 @@ function setupSmoothingSelector() {
     if (state.mode === 'comparison' && hasData) {
       scheduleComparisonApply();
     }
+    const smoothingOv = document.getElementById('smoothing-selector-ov');
+    if (smoothingOv) smoothingOv.value = e.target.value;
   });
 }
 
@@ -161,7 +175,10 @@ function scheduleComparisonApply(delay = 0) {
 }
 
 function updateSmoothingVisibility() {
-  smoothingSelector.style.display = (state.mode === 'comparison' || state.mode === 'periodic') ? '' : 'none';
+  const visible = state.mode === 'comparison' || state.mode === 'periodic';
+  smoothingSelector.style.display = visible ? '' : 'none';
+  const smoothingOv = document.getElementById('smoothing-selector-ov');
+  if (smoothingOv) smoothingOv.style.display = visible ? '' : 'none';
 }
 
 function switchMode(mode) {
@@ -206,6 +223,7 @@ function switchMode(mode) {
     progressionControls.classList.remove('hidden');
     showModeStub('progression');
   }
+  renderOverflowTags();
 }
 
 function bindControls() {
@@ -245,6 +263,9 @@ function bindControls() {
   }
 
   document.getElementById('reset').addEventListener('click', resetAll);
+
+  const resetOvBtn = document.getElementById('reset-ov');
+  if (resetOvBtn) resetOvBtn.addEventListener('click', resetAll);
 }
 
 // --- City Selectors (unified) ---
@@ -298,20 +319,33 @@ function removeCityTag(index) {
 
 function renderCityTags() {
   cityTagsContainer.innerHTML = selectedCities.map((city, index) => {
-    const colorClass = `tag-${COLOR_NAMES[index]}`;
+    const key = getCityColorKey(city);
+    const color = assignColor(key);
+    const hideClass = index > 0 ? ' hide-md' : '';
     return `
-      <div class="city-tag ${colorClass}">
-        <span>${escapeHtml(city.name)}</span>
+      <div class="city-tag${hideClass}" data-color-key="${escapeHtml(key)}" style="background:${color}">
+        <span class="city-tag-name">${escapeHtml(city.name)}</span>
         <span class="city-tag-remove" data-index="${index}">×</span>
       </div>
     `;
   }).join('');
 
   cityTagsContainer.querySelectorAll('.city-tag-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       removeCityTag(parseInt(btn.getAttribute('data-index'), 10));
     });
   });
+
+  cityTagsContainer.querySelectorAll('.city-tag').forEach(tag => {
+    tag.addEventListener('click', (e) => {
+      if (e.target.classList.contains('city-tag-remove')) return;
+      e.stopPropagation();
+      openColorPicker(tag, tag.dataset.colorKey);
+    });
+  });
+
+  renderOverflowTags();
 }
 
 function updateCitySearchState() {
@@ -390,20 +424,33 @@ function removeYearTag(index) {
 
 function renderYearTags() {
   yearTagsContainer.innerHTML = selectedYears.map((year, index) => {
-    const colorClass = `tag-${COLOR_NAMES[index]}`;
+    const key = getYearColorKey(year);
+    const color = assignColor(key);
+    const hideClass = index > 0 ? ' hide-md' : '';
     return `
-      <div class="year-tag ${colorClass}">
-        <span>${year}</span>
+      <div class="year-tag${hideClass}" data-color-key="${escapeHtml(key)}" style="background:${color}">
+        <span class="year-tag-name">${year}</span>
         <span class="year-tag-remove" data-index="${index}">×</span>
       </div>
     `;
   }).join('');
 
   yearTagsContainer.querySelectorAll('.year-tag-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       removeYearTag(parseInt(btn.getAttribute('data-index'), 10));
     });
   });
+
+  yearTagsContainer.querySelectorAll('.year-tag').forEach(tag => {
+    tag.addEventListener('click', (e) => {
+      if (e.target.classList.contains('year-tag-remove')) return;
+      e.stopPropagation();
+      openColorPicker(tag, tag.dataset.colorKey);
+    });
+  });
+
+  renderOverflowTags();
 }
 
 function updateYearInputState() {
@@ -499,11 +546,12 @@ async function applyComparison() {
     }
 
     if (entities.length === 1) {
-      renderAll(charts, allSeries[0], COLORS[0], state.prefs, entities[0].label);
+      renderAll(charts, allSeries[0], assignColor(getCityColorKey(selectedCities[0])), state.prefs, entities[0].label);
       fillStats(statsDom, [allStats[0]], [entities[0].label], startIso, endIso, smoothing);
     } else {
       const labels = entities.map(e => e.label);
-      renderCompare(charts, allSeries, COLORS, state.prefs, labels);
+      const colors = selectedCities.map(c => assignColor(getCityColorKey(c)));
+      renderCompare(charts, allSeries, colors, state.prefs, labels);
       fillStats(statsDom, allStats, labels, startIso, endIso, smoothing);
     }
 
@@ -572,9 +620,10 @@ async function applyPeriodic() {
     }
 
     if (allSeries.length === 1) {
-      renderAll(charts, allSeries[0], COLORS[0], state.prefs, labels[0]);
+      renderAll(charts, allSeries[0], assignColor(getYearColorKey(selectedYears[0])), state.prefs, labels[0]);
     } else {
-      renderCompare(charts, allSeries, COLORS, state.prefs, labels);
+      const colors = selectedYears.map(y => assignColor(getYearColorKey(y)));
+      renderCompare(charts, allSeries, colors, state.prefs, labels);
     }
 
     fillStatsPeriodic(statsDom, allStats, labels, periodicCity.name, periodStart, periodEnd, smoothing);
@@ -654,7 +703,7 @@ async function applyProgression() {
     const aggregatedStats = aggregateProgressionStats(allStats);
     const progressionSeries = aggregateSeriesForProgression(allSeries, labels);
 
-    renderAll(charts, progressionSeries, COLORS[0], state.prefs, progressionCity.name);
+    renderAll(charts, progressionSeries, assignColor(getCityColorKey(progressionCity)), state.prefs, progressionCity.name);
     fillStatsProgression(statsDom, aggregatedStats, progressionCity.name, formatPeriodLabel(periodConfig), yearFrom, yearTo);
 
     const elapsed = formatDuration(Date.now() - loadStart);
@@ -1061,4 +1110,176 @@ function buildFilename() {
   }
 
   return `${baseName}-${dateRange}.png`;
+}
+
+// --- Color system ---
+
+function getCityColorKey(city) {
+  return `city:${city.name}|${parseFloat(city.lat).toFixed(2)}|${parseFloat(city.lon).toFixed(2)}`;
+}
+
+function getYearColorKey(year) {
+  return `year:${year}`;
+}
+
+function assignColor(key) {
+  const assignments = state.prefs.colorAssignments;
+  if (assignments[key]) return assignments[key];
+  const used = new Set(Object.values(assignments));
+  const available = COLOR_PALETTE.filter(c => !used.has(c));
+  const pool = available.length > 0 ? available : COLOR_PALETTE;
+  const color = pool[Math.floor(Math.random() * pool.length)];
+  assignments[key] = color;
+  saveState(state);
+  return color;
+}
+
+function setColorAssignment(key, color) {
+  state.prefs.colorAssignments[key] = color;
+  saveState(state);
+}
+
+// --- Color picker ---
+
+let _colorPickerKey = null;
+
+function setupColorPicker() {
+  const picker = document.createElement('div');
+  picker.id = 'color-picker';
+  picker.classList.add('hidden');
+  COLOR_PALETTE.forEach(color => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'color-swatch';
+    btn.style.background = color;
+    btn.dataset.color = color;
+    btn.setAttribute('aria-label', color);
+    picker.appendChild(btn);
+  });
+  document.body.appendChild(picker);
+
+  document.addEventListener('click', (e) => {
+    if (!picker.classList.contains('hidden') && !picker.contains(e.target)) {
+      picker.classList.add('hidden');
+    }
+  });
+}
+
+function openColorPicker(tagEl, key) {
+  const picker = document.getElementById('color-picker');
+  if (!picker) return;
+  _colorPickerKey = key;
+  const currentColor = state.prefs.colorAssignments[key];
+  picker.querySelectorAll('.color-swatch').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === currentColor);
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      setColorAssignment(_colorPickerKey, btn.dataset.color);
+      renderCityTags();
+      renderYearTags();
+      picker.classList.add('hidden');
+      if (state.mode === 'comparison' && hasData) scheduleComparisonApply();
+      else if (state.mode === 'periodic' && hasData) applyPeriodic();
+    };
+  });
+  const rect = tagEl.getBoundingClientRect();
+  const pickerWidth = 148;
+  let left = rect.left;
+  if (left + pickerWidth > window.innerWidth - 8) left = window.innerWidth - pickerWidth - 8;
+  picker.style.top = `${rect.bottom + window.scrollY + 4}px`;
+  picker.style.left = `${left}px`;
+  picker.classList.remove('hidden');
+}
+
+// --- Overflow tags (secondary tags in hamburger panel) ---
+
+function renderOverflowTags() {
+  const overflowTags = document.getElementById('overflow-tags');
+  if (!overflowTags) return;
+
+  let html = '';
+  if (state.mode === 'comparison' && selectedCities.length > 1) {
+    html = selectedCities.slice(1).map((city, i) => {
+      const index = i + 1;
+      const key = getCityColorKey(city);
+      const color = state.prefs.colorAssignments[key] || assignColor(key);
+      return `<div class="city-tag" data-color-key="${escapeHtml(key)}" style="background:${color}">
+        <span class="city-tag-name">${escapeHtml(city.name)}</span>
+        <span class="city-tag-remove" data-index="${index}">×</span>
+      </div>`;
+    }).join('');
+  } else if (state.mode === 'periodic' && selectedYears.length > 1) {
+    html = selectedYears.slice(1).map((year, i) => {
+      const index = i + 1;
+      const key = getYearColorKey(year);
+      const color = state.prefs.colorAssignments[key] || assignColor(key);
+      return `<div class="year-tag" data-color-key="${escapeHtml(key)}" style="background:${color}">
+        <span class="year-tag-name">${year}</span>
+        <span class="year-tag-remove" data-index="${index}">×</span>
+      </div>`;
+    }).join('');
+  }
+
+  overflowTags.innerHTML = html;
+
+  overflowTags.querySelectorAll('.city-tag-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeCityTag(parseInt(btn.getAttribute('data-index'), 10));
+    });
+  });
+  overflowTags.querySelectorAll('.year-tag-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeYearTag(parseInt(btn.getAttribute('data-index'), 10));
+    });
+  });
+  overflowTags.querySelectorAll('.city-tag, .year-tag').forEach(tag => {
+    tag.addEventListener('click', (e) => {
+      if (e.target.classList.contains('city-tag-remove') || e.target.classList.contains('year-tag-remove')) return;
+      e.stopPropagation();
+      openColorPicker(tag, tag.dataset.colorKey);
+    });
+  });
+}
+
+// --- Overflow hamburger panel ---
+
+function setupOverflowBtn() {
+  const btn = document.getElementById('overflow-btn');
+  const panel = document.getElementById('overflow-panel');
+  if (!btn || !panel) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !isHidden);
+    btn.setAttribute('aria-expanded', String(isHidden));
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== btn) {
+      panel.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  const modeOv = document.getElementById('mode-selector-ov');
+  const smoothingOv = document.getElementById('smoothing-selector-ov');
+
+  if (modeOv) {
+    modeOv.value = state.mode;
+    modeOv.addEventListener('change', (e) => {
+      modeSelector.value = e.target.value;
+      modeSelector.dispatchEvent(new Event('change'));
+    });
+  }
+
+  if (smoothingOv) {
+    smoothingOv.value = state.prefs.smoothing || 0;
+    smoothingOv.addEventListener('change', (e) => {
+      smoothingSelector.value = e.target.value;
+      smoothingSelector.dispatchEvent(new Event('change'));
+    });
+  }
 }
