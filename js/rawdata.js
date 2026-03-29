@@ -180,7 +180,7 @@ async function _suggestLoad(query, dropdown) {
   _closeDropdown(dropdown);
   if (!cities.length) return;
 
-  dropdown.setAttribute('aria-expanded', 'true');
+  dropdown.classList.add('visible');
   cities.forEach(city => {
     const opt = document.createElement('div');
     opt.className = 'city-option';
@@ -203,7 +203,7 @@ async function _suggestLoad(query, dropdown) {
 }
 
 function _closeDropdown(dropdown) {
-  if (dropdown) { dropdown.innerHTML = ''; dropdown.removeAttribute('aria-expanded'); }
+  if (dropdown) { dropdown.innerHTML = ''; dropdown.classList.remove('visible'); }
 }
 
 async function _handleLoad() {

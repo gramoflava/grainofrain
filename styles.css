@@ -1703,6 +1703,10 @@ input[type="date"]::-webkit-datetime-edit-text {
   justify-content: center;
 }
 
+.rdm-placeholder.hidden {
+  display: none;
+}
+
 .rdm-placeholder-text {
   font-size: 0.9rem;
   color: var(--text-muted);
