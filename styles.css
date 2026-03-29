@@ -1199,18 +1199,11 @@ input[type="date"]::-webkit-datetime-edit-text {
   }
 }
 
-/* At very narrow: hide tag name text, show just colored dot */
-@media (max-width: 699px) {
-  .city-tag-name,
-  .year-tag-name {
-    display: none;
-  }
-
+/* At very narrow: tighten tag padding slightly */
+@media (max-width: 499px) {
   .city-tag,
   .year-tag {
-    padding: 0.2rem;
-    min-width: 14px;
-    min-height: 14px;
+    padding: 0.15rem 0.3rem;
   }
 }
 
