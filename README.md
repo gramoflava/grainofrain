@@ -15,10 +15,11 @@ A client-side weather data analysis tool for exploring historical and current we
 - No accounts, no tracking, no data collection
 
 ### 2. Single-Screen Information Density
-- All relevant data visible at once — no scrolling, no tabs, no hidden panels
+- All relevant data visible at once on desktop — no hidden panels
 - Compare up to 3 cities or time periods side-by-side in a single view
 - Statistical summaries and visual charts coexist on one page
 - Dense information presentation without clutter
+- Responsive layout for mobile and tablet with natural scrolling
 
 ### 3. Exploration and Analysis Focus
 - Historical weather data analysis across custom date ranges
@@ -29,7 +30,7 @@ A client-side weather data analysis tool for exploring historical and current we
 
 ## Analysis Modes
 
-**Grain of Rain** offers three distinct analysis modes:
+**Grain of Rain** offers four distinct analysis modes:
 
 ### Overview Mode
 - Analyze 1-3 cities simultaneously over a custom date range
@@ -49,6 +50,13 @@ A client-side weather data analysis tool for exploring historical and current we
 - Long-term climate trend visualization
 - Aggregated data across multi-year ranges
 
+### Raw Data Management Mode
+- Browse, inspect, and manage all locally cached weather data
+- Collapsible city tree with per-entry storage size indicators
+- Load any ERA5 parameter (24 variables across 6 groups) for any city and date range — beyond what the other modes fetch
+- Preview any stored dataset as a chart; aggregate entries include a field picker to switch between all available parameters
+- Selectively delete individual entries to free up space
+
 ## Value Proposition
 
 The tool serves users who need to:
@@ -64,6 +72,7 @@ Built with vanilla JavaScript and minimal dependencies to ensure:
 - Long-term maintainability without framework lock-in
 - Full transparency — inspect and understand every line
 - Works offline once loaded (with cached data)
+- Persistent local cache via IndexedDB — previously fetched data loads instantly on return visits
 - Icons: 28px from [Tabler Icons](https://tabler.io/icons)
 
 ## Development Philosophy
