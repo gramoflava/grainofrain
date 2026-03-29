@@ -9,6 +9,7 @@ export function initCharts() {
 
 // --- Tab state ---
 let _activeTab = 'hydro'; // 'hydro' | 'sun' | 'wind'
+let _activeTempFocus = 'mean'; // 'mean' | 'max' | 'min'
 let _lastSingle = null;   // { ch, series, color, prefs, label }
 let _lastCompare = null;  // { ch, allSeries, colors, prefs, labels }
 
@@ -20,6 +21,19 @@ export function setHydroTab(tab) {
   } else if (_lastCompare) {
     const { ch, allSeries, colors, prefs, labels } = _lastCompare;
     _renderHydroChart(ch, allSeries, colors, prefs, labels, true);
+  }
+}
+
+export function setTempFocus(focus) {
+  _activeTempFocus = focus;
+  if (_lastSingle) {
+    const { ch, series, color, prefs, label } = _lastSingle;
+    const asterisk = (prefs.smoothing || 0) > 0 ? '*' : '';
+    _renderTempChart(ch, series, color, prefs, label, asterisk);
+  } else if (_lastCompare) {
+    const { ch, allSeries, colors, prefs, labels } = _lastCompare;
+    const asterisk = (prefs.smoothing || 0) > 0 ? '*' : '';
+    _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk);
   }
 }
 
@@ -89,6 +103,22 @@ function _precipAxisFormatter(precipAxisMax) {
   };
 }
 
+function _monthMarkLines(x, gridColor) {
+  const data = [];
+  for (let i = 1; i < x.length; i++) {
+    if (x[i].slice(5, 7) !== x[i - 1].slice(5, 7)) {
+      data.push({ xAxis: x[i] });
+    }
+  }
+  return {
+    silent: true,
+    symbol: 'none',
+    lineStyle: { color: gridColor, type: 'solid', width: 1, opacity: 0.5 },
+    label: { show: false },
+    data
+  };
+}
+
 // --- Temp chart renderer (single) ---
 
 function _renderTempChart(ch, series, color, prefs, label, asterisk) {
@@ -96,6 +126,13 @@ function _renderTempChart(ch, series, color, prefs, label, asterisk) {
   const { left, right } = _gridSizes();
   const x = series.x;
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
+  const focus = _activeTempFocus;
+
+  const focusCfg = {
+    max:  { lineW: [2, 0, 0], lineColor: '#EF5350', norm: series.normMax },
+    mean: { lineW: [0, 2, 0], lineColor: '#0D47A1', norm: series.norm },
+    min:  { lineW: [0, 0, 2], lineColor: '#1E88E5', norm: series.normMin },
+  }[focus] || { lineW: [0, 2, 0], lineColor: '#0D47A1', norm: series.norm };
 
   const tempRange = series.tempMax.map((mx, i) =>
     (isFiniteNumber(mx) && isFiniteNumber(series.tempMin[i]) ? mx - series.tempMin[i] : null));
@@ -112,7 +149,9 @@ function _renderTempChart(ch, series, color, prefs, label, asterisk) {
         if (!p.seriesName || p.seriesName === 'Temp Range') return;
         const name = p.seriesName;
         let markerColor = '';
-        if (name.startsWith('T~')) markerColor = '#0D47A1';
+        if (name.startsWith('T↑') && focus === 'max') markerColor = '#EF5350';
+        else if (name.startsWith('T~')) markerColor = '#0D47A1';
+        else if (name.startsWith('T↓') && focus === 'min') markerColor = '#1E88E5';
         const fv = typeof p.value === 'number' ? p.value.toFixed(1) : p.value;
         let marker = '<span style="display:inline-block;width:10px;margin-right:5px;"></span>';
         if (markerColor) marker = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${markerColor};margin-right:5px;"></span>`;
@@ -122,15 +161,16 @@ function _renderTempChart(ch, series, color, prefs, label, asterisk) {
     }
   };
 
+  const monthML = _monthMarkLines(x, gridColor);
   const tempSeries = [
-    { name: 'T↑', type: 'line', data: series.tempMax, symbol: 'none', lineStyle: { color: '#64B5F6', width: 0 }, tooltip: { valueFormatter: valueFmt } },
-    { name: `T~${asterisk}`, type: 'line', data: series.tempMean, symbol: 'none', lineStyle: { color: '#0D47A1', width: 2 }, tooltip: { valueFormatter: valueFmt } },
-    { name: 'T↓', type: 'line', data: series.tempMin, symbol: 'none', stack: 'temp-range', stackStrategy: 'all', lineStyle: { color: '#1565C0', width: 0 }, tooltip: { valueFormatter: valueFmt } },
+    { name: 'T↑', type: 'line', data: series.tempMax, symbol: 'none', lineStyle: { color: '#EF5350', width: focusCfg.lineW[0] }, tooltip: { valueFormatter: valueFmt }, markLine: focus === 'max' ? monthML : undefined },
+    { name: `T~${asterisk}`, type: 'line', data: series.tempMean, symbol: 'none', lineStyle: { color: '#0D47A1', width: focusCfg.lineW[1] }, tooltip: { valueFormatter: valueFmt }, markLine: focus === 'mean' ? monthML : undefined },
+    { name: 'T↓', type: 'line', data: series.tempMin, symbol: 'none', stack: 'temp-range', stackStrategy: 'all', lineStyle: { color: '#1E88E5', width: focusCfg.lineW[2] }, tooltip: { valueFormatter: valueFmt }, markLine: focus === 'min' ? monthML : undefined },
     { name: 'Temp Range', type: 'line', data: tempRange, stack: 'temp-range', stackStrategy: 'all', showSymbol: false, lineStyle: { width: 0 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: color + '33' }, { offset: 1, color: color + '05' }]) }, tooltip: { show: false } }
   ];
 
-  if (series.norm) {
-    tempSeries.push({ name: 'Climate Norm', type: 'line', data: series.norm, symbol: 'none', lineStyle: { color: '#616161', type: 'dashed' }, tooltip: { valueFormatter: valueFmt } });
+  if (focusCfg.norm) {
+    tempSeries.push({ name: 'Climate Norm', type: 'line', data: focusCfg.norm, symbol: 'none', lineStyle: { color: '#616161', type: 'dashed' }, tooltip: { valueFormatter: valueFmt } });
   }
 
   ch.temp.setOption({
@@ -152,6 +192,12 @@ function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk)
   const { left, right } = _gridSizes();
   const x = allSeries[0].x;
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
+  const focus = _activeTempFocus;
+
+  // Which data field and norm field to use
+  const focusDataKey = focus === 'max' ? 'tempMax' : focus === 'min' ? 'tempMin' : 'tempMean';
+  const focusNormKey = focus === 'max' ? 'normMax' : focus === 'min' ? 'normMin' : 'norm';
+  const focusSeriesPrefix = focus === 'max' ? 'T↑' : focus === 'min' ? 'T↓' : 'T~';
 
   const tooltip = {
     trigger: 'axis', confine: true, transitionDuration: 0.2,
@@ -163,7 +209,7 @@ function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk)
       let html = `<div style="margin-bottom:4px;font-weight:500;">${date}</div>`;
       const mainSeries = params.filter(p => {
         const n = p.seriesName;
-        return n.startsWith('T~') || n.startsWith('Climate Norm');
+        return n.startsWith(focusSeriesPrefix) || n.startsWith('Climate Norm');
       });
       mainSeries.forEach(p => {
         const name = p.seriesName;
@@ -176,7 +222,7 @@ function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk)
           if (label) displayName = displayName.replace(/ \d+$/, ` ${label}`);
         }
         const fv = typeof p.value === 'number' ? p.value.toFixed(1) : p.value;
-        const showMarker = name.startsWith('T~');
+        const showMarker = name.startsWith(focusSeriesPrefix);
         let marker = '<span style="display:inline-block;width:10px;margin-right:5px;"></span>';
         if (showMarker) marker = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${cityColor};margin-right:5px;"></span>`;
         html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0;"><span>${marker}${displayName}</span><span style="margin-left:20px;font-weight:600;">${fv} °C</span></div>`;
@@ -186,24 +232,32 @@ function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk)
   };
 
   const series = [];
+  const monthML = _monthMarkLines(x, gridColor);
 
-  // Temperature mean lines per city
+  // Focused temperature lines per city
   allSeries.forEach((s, idx) => {
     if (!s || idx >= colors.length) return;
-    series.push({ name: `T~${asterisk} ${idx + 1}`, type: 'line', data: s.tempMean, symbol: 'none', lineStyle: { color: colors[idx], width: 2 }, tooltip: { valueFormatter: valueFmt } });
+    series.push({
+      name: `${focusSeriesPrefix}${asterisk} ${idx + 1}`,
+      type: 'line', data: s[focusDataKey], symbol: 'none',
+      lineStyle: { color: colors[idx], width: 2 },
+      tooltip: { valueFormatter: valueFmt },
+      markLine: idx === 0 ? monthML : undefined
+    });
   });
 
-  // Climate norms
+  // Climate norms — pick norm corresponding to focus
+  const normKey = focusNormKey;
   let showSingleNorm = false;
-  if (allSeries.length > 1 && allSeries[0]?.norm && allSeries[1]?.norm) {
-    showSingleNorm = allSeries.every(s => s?.norm && JSON.stringify(s.norm) === JSON.stringify(allSeries[0].norm));
+  if (allSeries.length > 1 && allSeries[0]?.[normKey] && allSeries[1]?.[normKey]) {
+    showSingleNorm = allSeries.every(s => s?.[normKey] && JSON.stringify(s[normKey]) === JSON.stringify(allSeries[0][normKey]));
   }
   if (showSingleNorm) {
-    series.push({ name: 'Climate Norm', type: 'line', data: allSeries[0].norm, symbol: 'none', lineStyle: { color: '#616161', type: 'dashed', width: 1 }, tooltip: { valueFormatter: valueFmt } });
+    series.push({ name: 'Climate Norm', type: 'line', data: allSeries[0][normKey], symbol: 'none', lineStyle: { color: '#616161', type: 'dashed', width: 1 }, tooltip: { valueFormatter: valueFmt } });
   } else {
     allSeries.forEach((s, idx) => {
-      if (!s || idx >= colors.length || !s.norm || !prefs.showNormals) return;
-      series.push({ name: `Climate Norm ${idx + 1}`, type: 'line', data: s.norm, symbol: 'none', lineStyle: { color: '#616161', type: 'dashed', width: 1 }, tooltip: { valueFormatter: valueFmt } });
+      if (!s || idx >= colors.length || !s[normKey] || !prefs.showNormals) return;
+      series.push({ name: `Climate Norm ${idx + 1}`, type: 'line', data: s[normKey], symbol: 'none', lineStyle: { color: '#616161', type: 'dashed', width: 1 }, tooltip: { valueFormatter: valueFmt } });
     });
   }
 
@@ -507,6 +561,7 @@ function _renderWindTab(ch, allSeries, colors, labels, isCompare, x, grid, gridC
 
 export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: true, smoothing: 0 }, label = '') {
   const asterisk = (prefs.smoothing || 0) > 0 ? '*' : '';
+  if (prefs.tempFocus) _activeTempFocus = prefs.tempFocus;
   _lastSingle = { ch, series, color, prefs, label };
   _lastCompare = null;
   _renderTempChart(ch, series, color, prefs, label, asterisk);
@@ -515,6 +570,7 @@ export function renderAll(ch, series, color = '#1E88E5', prefs = { showGrid: tru
 
 export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, smoothing: 0 }, labels = []) {
   const asterisk = (prefs.smoothing || 0) > 0 ? '*' : '';
+  if (prefs.tempFocus) _activeTempFocus = prefs.tempFocus;
   _lastCompare = { ch, allSeries, colors, prefs, labels };
   _lastSingle = null;
   _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk);

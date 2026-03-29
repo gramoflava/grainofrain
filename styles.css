@@ -181,6 +181,18 @@ main.container-fluid {
   letter-spacing: 0 !important;
 }
 
+.chart-header-split {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem !important;
+}
+
+.chart-header-split .temp-focus-btns {
+  display: flex;
+  gap: 0.15rem;
+}
+
 .tab-btn {
   font-size: 0.7rem;
   font-weight: 600;

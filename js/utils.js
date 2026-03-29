@@ -94,6 +94,8 @@ export function applySmoothingAndTrim(series, window, startDate, endDate) {
   if (window === 0) return series;
 
   const smoothedTempMean = rollingAverage(series.tempMean, window);
+  const smoothedTempMax = rollingAverage(series.tempMax, window);
+  const smoothedTempMin = rollingAverage(series.tempMin, window);
   const smoothedHumidity = rollingAverage(series.humidity, window);
   const smoothedSunshine = rollingAverage(series.sunshineDuration, window);
   const smoothedDaylight = rollingAverage(series.daylightDuration, window);
@@ -107,8 +109,8 @@ export function applySmoothingAndTrim(series, window, startDate, endDate) {
   return {
     x: series.x.slice(startIdx, trimEnd),
     dates: series.x.slice(startIdx, trimEnd),
-    tempMax: series.tempMax.slice(startIdx, trimEnd),
-    tempMin: series.tempMin.slice(startIdx, trimEnd),
+    tempMax: smoothedTempMax.slice(startIdx, trimEnd),
+    tempMin: smoothedTempMin.slice(startIdx, trimEnd),
     tempMean: smoothedTempMean.slice(startIdx, trimEnd),
     precip: series.precip.slice(startIdx, trimEnd),
     rain: series.rain ? series.rain.slice(startIdx, trimEnd) : null,
@@ -119,7 +121,9 @@ export function applySmoothingAndTrim(series, window, startDate, endDate) {
     windGusts: series.windGusts ? series.windGusts.slice(startIdx, trimEnd) : null,
     sunshineDuration: smoothedSunshine.slice(startIdx, trimEnd),
     daylightDuration: smoothedDaylight.slice(startIdx, trimEnd),
-    norm: series.norm ? series.norm.slice(startIdx, trimEnd) : null
+    norm: series.norm ? series.norm.slice(startIdx, trimEnd) : null,
+    normMax: series.normMax ? series.normMax.slice(startIdx, trimEnd) : null,
+    normMin: series.normMin ? series.normMin.slice(startIdx, trimEnd) : null
   };
 }
 

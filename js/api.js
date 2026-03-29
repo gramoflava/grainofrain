@@ -148,7 +148,7 @@ export async function fetchNormals(lat, lon, signal) {
   const cacheKey = `${lat.toFixed(4)},${lon.toFixed(4)}`;
   if (_normalsCache.has(cacheKey)) return _normalsCache.get(cacheKey);
 
-  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=1991-01-01&end_date=2020-12-31&daily=temperature_2m_mean&timezone=UTC`;
+  const url = `${ERA_URL}?latitude=${lat}&longitude=${lon}&start_date=1991-01-01&end_date=2020-12-31&daily=temperature_2m_mean,temperature_2m_max,temperature_2m_min&timezone=UTC`;
   const res = await fetchWithRetry(url, { signal });
   if (!res.ok) {
     throw new Error('Failed to load climate normals');
@@ -159,20 +159,22 @@ export async function fetchNormals(lat, lon, signal) {
   if (!Array.isArray(times) || !Array.isArray(temps) || times.length !== temps.length) {
     throw new Error('Climate normals unavailable for this location');
   }
+  const tempsMax = json?.daily?.temperature_2m_max;
+  const tempsMin = json?.daily?.temperature_2m_min;
 
-  const result = buildDailyNormals(times, temps);
+  const result = buildDailyNormals(times, temps, tempsMax, tempsMin);
   _normalsCache.set(cacheKey, result);
   return result;
 }
 
-function buildDailyNormals(times, temps) {
+function _buildOneDailyNormal(times, values) {
   const sumsCommon = new Array(365).fill(0);
   const countsCommon = new Array(365).fill(0);
   const sumsLeap = new Array(366).fill(0);
   const countsLeap = new Array(366).fill(0);
   for (let i = 0; i < times.length; i++) {
     const dateStr = times[i];
-    const value = typeof temps[i] === 'number' ? temps[i] : null;
+    const value = typeof values[i] === 'number' ? values[i] : null;
     if (!dateStr || value === null) continue;
     const month = parseInt(dateStr.slice(5, 7), 10);
     const day = parseInt(dateStr.slice(8, 10), 10);
@@ -180,9 +182,7 @@ function buildDailyNormals(times, temps) {
     const idxLeap = dayOfYear(month, day, true) - 1;
     sumsLeap[idxLeap] += value;
     countsLeap[idxLeap] += 1;
-    if (month === 2 && day === 29) {
-      continue;
-    }
+    if (month === 2 && day === 29) continue;
     const idxCommon = dayOfYear(month, day, false) - 1;
     sumsCommon[idxCommon] += value;
     countsCommon[idxCommon] += 1;
@@ -192,6 +192,20 @@ function buildDailyNormals(times, temps) {
   fillMissing(dailyCommon);
   fillMissing(dailyLeap);
   return { dailyCommon, dailyLeap };
+}
+
+function buildDailyNormals(times, temps, tempsMax, tempsMin) {
+  const mean = _buildOneDailyNormal(times, temps);
+  const max = Array.isArray(tempsMax) ? _buildOneDailyNormal(times, tempsMax) : null;
+  const min = Array.isArray(tempsMin) ? _buildOneDailyNormal(times, tempsMin) : null;
+  return {
+    dailyCommon: mean.dailyCommon,
+    dailyLeap: mean.dailyLeap,
+    dailyCommonMax: max ? max.dailyCommon : null,
+    dailyLeapMax: max ? max.dailyLeap : null,
+    dailyCommonMin: min ? min.dailyCommon : null,
+    dailyLeapMin: min ? min.dailyLeap : null,
+  };
 }
 
 function buildDailyMap(daily) {

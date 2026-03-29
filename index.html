@@ -187,7 +187,14 @@
       <div id="rdm-container" class="rdm-container hidden"></div>
       <section id="charts" aria-label="Forecast charts">
         <div class="chart-card">
-          <header>Temperature · Climate Norm</header>
+          <header class="chart-header-split">
+            <span>Temperature</span>
+            <div class="temp-focus-btns">
+              <button class="tab-btn" data-focus="max">High</button>
+              <button class="tab-btn active" data-focus="mean">Avg</button>
+              <button class="tab-btn" data-focus="min">Low</button>
+            </div>
+          </header>
           <div id="chart-temp" class="chart" role="img" aria-label="Temperature chart"></div>
         </div>
         <div class="chart-card">

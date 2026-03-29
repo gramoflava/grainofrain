@@ -1,5 +1,7 @@
 export function buildSeries(daily, _humidityAgg, _windAgg, normals) {
-  const normSeries = normals ? mapNormalsToDates(daily.date, normals) : null;
+  const normSeries = normals ? mapNormalsToDates(daily.date, normals, 'mean') : null;
+  const normSeriesMax = normals ? mapNormalsToDates(daily.date, normals, 'max') : null;
+  const normSeriesMin = normals ? mapNormalsToDates(daily.date, normals, 'min') : null;
   const n = daily.date.length;
   // Convert sunshine/daylight from seconds to hours
   const sunshineDuration = (daily.sunshineDur || new Array(n).fill(null)).map(v => v !== null ? v / 3600 : null);
@@ -19,7 +21,9 @@ export function buildSeries(daily, _humidityAgg, _windAgg, normals) {
     windGusts: daily.windGusts || new Array(n).fill(null),
     sunshineDuration,
     daylightDuration,
-    norm: normSeries
+    norm: normSeries,
+    normMax: normSeriesMax,
+    normMin: normSeriesMin
   };
 }
 
@@ -90,9 +94,19 @@ function isNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function mapNormalsToDates(dates, normals) {
+function mapNormalsToDates(dates, normals, field = 'mean') {
   if (!normals) return null;
-  const { dailyCommon, dailyLeap } = normals;
+  let dailyCommon, dailyLeap;
+  if (field === 'max') {
+    dailyCommon = normals.dailyCommonMax;
+    dailyLeap = normals.dailyLeapMax;
+  } else if (field === 'min') {
+    dailyCommon = normals.dailyCommonMin;
+    dailyLeap = normals.dailyLeapMin;
+  } else {
+    dailyCommon = normals.dailyCommon;
+    dailyLeap = normals.dailyLeap;
+  }
   if (!Array.isArray(dailyCommon) || !Array.isArray(dailyLeap)) {
     return null;
   }

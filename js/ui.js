@@ -3,7 +3,7 @@ import { fetchDaily, fetchNormals, getLocationFromIP, clearDailyCache } from './
 import { initRawDataMode, destroyRawDataMode } from './rawdata.js';
 import { saveLocation } from './locations.js';
 import { buildSeries, computeStats } from './transform.js';
-import { initCharts, renderAll, renderCompare, setHydroTab } from './charts.js';
+import { initCharts, renderAll, renderCompare, setHydroTab, setTempFocus } from './charts.js';
 import { exportPng, copyPngToClipboard } from './export.js';
 import { createCitySelector } from './city-selector.js';
 import { fillStats, fillStatsPeriodic, fillStatsProgression } from './stats.js';
@@ -68,6 +68,7 @@ prefillInputs();
 bindControls();
 setupModeSelector();
 setupSmoothingSelector();
+setupTempFocusSwitch();
 setupCitySelectors();
 setupYearTagSelector();
 setupPeriodTypeSelector();
@@ -109,6 +110,21 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
 });
 
 // --- Mode & Controls ---
+
+function setupTempFocusSwitch() {
+  const btns = document.querySelectorAll('.tab-btn[data-focus]');
+  const current = state.prefs.tempFocus || 'mean';
+  btns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.focus === current);
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.prefs.tempFocus = btn.dataset.focus;
+      saveState(state);
+      setTempFocus(btn.dataset.focus);
+    });
+  });
+}
 
 function setupModeSelector() {
   modeSelector.value = state.mode;
