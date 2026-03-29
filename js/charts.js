@@ -456,7 +456,7 @@ function _renderWindTab(ch, allSeries, colors, labels, isCompare, x, grid, gridC
   let windMax = 0;
   allSeries.forEach(s => {
     if (!s) return;
-    const candidates = [...(s.windMax || []), ...(s.windGusts || [])];
+    const candidates = [...(s.wind || []), ...(s.windGusts || [])];
     const m = Math.max(...candidates.filter(v => isFiniteNumber(v)));
     if (isFiniteNumber(m) && m > windMax) windMax = m;
   });
@@ -467,9 +467,8 @@ function _renderWindTab(ch, allSeries, colors, labels, isCompare, x, grid, gridC
   if (isCompare) {
     allSeries.forEach((s, idx) => {
       if (!s || idx >= colors.length) return;
-      const windData = (s.windMax && s.windMax.length) ? s.windMax : s.wind;
       series.push({
-        name: `Wind ${idx + 1}`, type: 'line', data: windData,
+        name: `Wind ${idx + 1}`, type: 'line', data: s.wind,
         showSymbol: false, lineStyle: { color: colors[idx], width: 1.5 },
         areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors[idx] + '33' }, { offset: 1, color: colors[idx] + '05' }]) },
         tooltip: { valueFormatter: v => (typeof v === 'number' ? `${v.toFixed(1)} km/h` : v) }
@@ -483,9 +482,8 @@ function _renderWindTab(ch, allSeries, colors, labels, isCompare, x, grid, gridC
   } else {
     const s = allSeries[0];
     const color = colors[0];
-    const windData = (s.windMax && s.windMax.length) ? s.windMax : s.wind;
     series.push({
-      name: 'Wind', type: 'line', data: windData,
+      name: 'Wind', type: 'line', data: s.wind,
       showSymbol: false, lineStyle: { color, width: 1.5 },
       areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: color + '40' }, { offset: 1, color: color + '08' }]) },
       tooltip: { valueFormatter: v => (typeof v === 'number' ? `${v.toFixed(1)} km/h` : v) }
