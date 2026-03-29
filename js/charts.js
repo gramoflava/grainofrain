@@ -417,7 +417,7 @@ function _renderSunTab(ch, allSeries, colors, labels, isCompare, x, grid, gridCo
           const label = labels[parseInt(cityNumMatch[1]) - 1];
           if (label) displayName = displayName.replace(/ \d+$/, ` ${label}`);
         }
-        let markerColor = name.startsWith('Daylight') ? '#78909C' : '#FFA726';
+        let markerColor = name.startsWith('Daylight') ? 'rgba(100,181,246,0.60)' : 'rgba(255,167,38,0.85)';
         if (isCompare) markerColor = cityColor;
         const marker = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${markerColor};margin-right:5px;"></span>`;
         html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0;"><span>${marker}${displayName}</span><span style="margin-left:20px;font-weight:600;">${fv} h</span></div>`;
@@ -448,11 +448,10 @@ function _renderSunTab(ch, allSeries, colors, labels, isCompare, x, grid, gridCo
       areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(100,181,246,0.25)' }, { offset: 1, color: 'rgba(100,181,246,0.05)' }]) },
       tooltip: { valueFormatter: v => (typeof v === 'number' ? `${v.toFixed(1)} h` : v) }
     });
-    // Sunshine as foreground area (golden)
+    // Sunshine as bars (golden)
     series.push({
-      name: 'Sunshine', type: 'line', data: s.sunshineDuration,
-      showSymbol: false, lineStyle: { color: '#FFA726', width: 1 },
-      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(255,167,38,0.55)' }, { offset: 1, color: 'rgba(255,167,38,0.08)' }]) },
+      name: 'Sunshine', type: 'bar', data: s.sunshineDuration,
+      barWidth: '55%', itemStyle: { color: 'rgba(255,167,38,0.85)' },
       tooltip: { valueFormatter: v => (typeof v === 'number' ? `${v.toFixed(1)} h` : v) }
     });
   }
@@ -491,7 +490,7 @@ function _renderWindTab(ch, allSeries, colors, labels, isCompare, x, grid, gridC
           const label = labels[parseInt(cityNumMatch[1]) - 1];
           if (label) displayName = displayName.replace(/ \d+$/, ` ${label}`);
         }
-        let markerColor = name.startsWith('Gusts') ? '#8E24AA' : cityColor;
+        let markerColor = name.startsWith('Gusts') ? 'rgba(142,36,170,0.70)' : 'rgba(100,181,246,0.85)';
         const marker = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${markerColor};margin-right:5px;"></span>`;
         html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0;"><span>${marker}${displayName}</span><span style="margin-left:20px;font-weight:600;">${fv} km/h</span></div>`;
       });
@@ -528,16 +527,17 @@ function _renderWindTab(ch, allSeries, colors, labels, isCompare, x, grid, gridC
     });
   } else {
     const s = allSeries[0];
-    const color = colors[0];
+    // Gusts as background area
     series.push({
-      name: 'Wind', type: 'line', data: s.wind,
-      showSymbol: false, lineStyle: { color, width: 1.5 },
-      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: color + '40' }, { offset: 1, color: color + '08' }]) },
+      name: 'Gusts', type: 'line', data: s.windGusts,
+      showSymbol: false, lineStyle: { width: 0 },
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(142,36,170,0.20)' }, { offset: 1, color: 'rgba(142,36,170,0.04)' }]) },
       tooltip: { valueFormatter: v => (typeof v === 'number' ? `${v.toFixed(1)} km/h` : v) }
     });
+    // Average wind speed as bars
     series.push({
-      name: 'Gusts', type: 'bar', data: s.windGusts,
-      barWidth: '55%', itemStyle: { color: '#8E24AA88' },
+      name: 'Wind', type: 'bar', data: s.wind,
+      barWidth: '55%', itemStyle: { color: 'rgba(100,181,246,0.85)' },
       tooltip: { valueFormatter: v => (typeof v === 'number' ? `${v.toFixed(1)} km/h` : v) }
     });
   }
