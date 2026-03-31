@@ -37,6 +37,7 @@ let selectedYears = [];
 let abortController = null;
 let _loadProgress = null; // { loaded, total } — updated during progression loading
 let hasData = false;
+let _periodicRaw = null; // { city, years, periodStart, periodEnd, padding, entries: [{daily,startIso,endIso}], normals }
 let _comparisonDebounceTimer = null;
 
 setAbortControllerRef(() => abortController, (v) => { abortController = v; });
@@ -584,38 +585,65 @@ async function applyPeriodic() {
   }
 
   const smoothing = state.prefs.smoothing || 0;
-  const padding = 7; // always fetch with max padding so smoothing changes hit the L1 cache
+  const padding = Math.floor(smoothing / 2);
+
+  // Reuse cached raw data when params match and stored padding covers current needs
+  const cached = _periodicRaw;
+  const canReuse = cached &&
+    cached.city.lat === periodicCity.lat &&
+    cached.city.lon === periodicCity.lon &&
+    JSON.stringify(cached.years) === JSON.stringify(selectedYears) &&
+    cached.periodStart === periodStart &&
+    cached.periodEnd === periodEnd &&
+    cached.padding >= padding;
+
   let loadingToast = null;
 
   try {
-    abortController = new AbortController();
-    const signal = abortController.signal;
     const allSeries = [];
     const allStats = [];
     const labels = [];
-    let sharedNormals = null;
+    let entries, sharedNormals;
 
-    if (selectedYears.length > 1) loadingToast = createProgressToast();
+    if (canReuse) {
+      entries = cached.entries;
+      sharedNormals = cached.normals;
+    } else {
+      abortController = new AbortController();
+      const signal = abortController.signal;
+      entries = [];
+      sharedNormals = null;
 
-    for (let i = 0; i < selectedYears.length; i++) {
-      if (selectedYears.length > 1) updateProgressToast(loadingToast, `Loading ${i + 1}/${selectedYears.length}...`);
-      if (signal.aborted) throw new Error('Cancelled');
+      if (selectedYears.length > 1) loadingToast = createProgressToast();
 
-      const year = selectedYears[i];
-      const startIso = `${year}-${periodStart}`;
-      const endIso = `${year}-${periodEnd}`;
-      const paddedStart = addDays(startIso, -padding);
-      const paddedEnd = addDays(endIso, padding);
+      for (let i = 0; i < selectedYears.length; i++) {
+        if (selectedYears.length > 1) updateProgressToast(loadingToast, `Loading ${i + 1}/${selectedYears.length}...`);
+        if (signal.aborted) throw new Error('Cancelled');
 
-      const daily = await fetchDaily(periodicCity.lat, periodicCity.lon, paddedStart, paddedEnd, signal);
+        const year = selectedYears[i];
+        const startIso = `${year}-${periodStart}`;
+        const endIso = `${year}-${periodEnd}`;
+        const paddedStart = addDays(startIso, -padding);
+        const paddedEnd = addDays(endIso, padding);
 
-      if (state.prefs.showNormals && i === 0) {
-        try { sharedNormals = await fetchNormals(periodicCity.lat, periodicCity.lon, signal); } catch (e) { sharedNormals = null; }
+        const daily = await fetchDaily(periodicCity.lat, periodicCity.lon, paddedStart, paddedEnd, signal);
+
+        if (state.prefs.showNormals && i === 0) {
+          try { sharedNormals = await fetchNormals(periodicCity.lat, periodicCity.lon, signal); } catch (e) { sharedNormals = null; }
+        }
+
+        entries.push({ daily, startIso, endIso });
       }
 
+      _periodicRaw = { city: periodicCity, years: [...selectedYears], periodStart, periodEnd, padding, entries, normals: sharedNormals };
+      abortController = null;
+    }
+
+    for (let i = 0; i < entries.length; i++) {
+      const { daily, startIso, endIso } = entries[i];
+      const year = selectedYears[i];
       let series = buildSeries(daily, null, null, state.prefs.showNormals ? sharedNormals : null);
       series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
-
       allSeries.push(series);
       allStats.push(computeStats(series));
       labels.push(year.toString());
