@@ -91,36 +91,36 @@ export function rollingAverage(arr, window) {
 }
 
 export function applySmoothingAndTrim(series, window, startDate, endDate) {
-  if (window === 0) return series;
-
-  const smoothedTempMean = rollingAverage(series.tempMean, window);
-  const smoothedTempMax = rollingAverage(series.tempMax, window);
-  const smoothedTempMin = rollingAverage(series.tempMin, window);
-  const smoothedHumidity = rollingAverage(series.humidity, window);
-  const smoothedSunshine = rollingAverage(series.sunshineDuration, window);
-  const smoothedDaylight = rollingAverage(series.daylightDuration, window);
-
   const startIdx = series.x.findIndex(d => d >= startDate);
   const endIdx = series.x.findIndex(d => d > endDate);
   const trimEnd = endIdx === -1 ? series.x.length : endIdx;
 
   if (startIdx === -1) return series;
 
+  const sm = window > 0 ? {
+    tempMean: rollingAverage(series.tempMean, window),
+    tempMax: rollingAverage(series.tempMax, window),
+    tempMin: rollingAverage(series.tempMin, window),
+    humidity: rollingAverage(series.humidity, window),
+    sunshineDuration: rollingAverage(series.sunshineDuration, window),
+    daylightDuration: rollingAverage(series.daylightDuration, window),
+  } : series;
+
   return {
     x: series.x.slice(startIdx, trimEnd),
     dates: series.x.slice(startIdx, trimEnd),
-    tempMax: smoothedTempMax.slice(startIdx, trimEnd),
-    tempMin: smoothedTempMin.slice(startIdx, trimEnd),
-    tempMean: smoothedTempMean.slice(startIdx, trimEnd),
+    tempMax: sm.tempMax.slice(startIdx, trimEnd),
+    tempMin: sm.tempMin.slice(startIdx, trimEnd),
+    tempMean: sm.tempMean.slice(startIdx, trimEnd),
     precip: series.precip.slice(startIdx, trimEnd),
     rain: series.rain ? series.rain.slice(startIdx, trimEnd) : null,
     snow: series.snow ? series.snow.slice(startIdx, trimEnd) : null,
-    humidity: smoothedHumidity.slice(startIdx, trimEnd),
+    humidity: sm.humidity.slice(startIdx, trimEnd),
     wind: series.wind.slice(startIdx, trimEnd),
     windMax: series.windMax ? series.windMax.slice(startIdx, trimEnd) : null,
     windGusts: series.windGusts ? series.windGusts.slice(startIdx, trimEnd) : null,
-    sunshineDuration: smoothedSunshine.slice(startIdx, trimEnd),
-    daylightDuration: smoothedDaylight.slice(startIdx, trimEnd),
+    sunshineDuration: sm.sunshineDuration.slice(startIdx, trimEnd),
+    daylightDuration: sm.daylightDuration.slice(startIdx, trimEnd),
     norm: series.norm ? series.norm.slice(startIdx, trimEnd) : null,
     normMax: series.normMax ? series.normMax.slice(startIdx, trimEnd) : null,
     normMin: series.normMin ? series.normMin.slice(startIdx, trimEnd) : null

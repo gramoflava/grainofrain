@@ -584,7 +584,7 @@ async function applyPeriodic() {
   }
 
   const smoothing = state.prefs.smoothing || 0;
-  const padding = Math.floor(smoothing / 2);
+  const padding = 7; // always fetch with max padding so smoothing changes hit the L1 cache
   let loadingToast = null;
 
   try {
@@ -614,7 +614,7 @@ async function applyPeriodic() {
       }
 
       let series = buildSeries(daily, null, null, state.prefs.showNormals ? sharedNormals : null);
-      if (smoothing > 0) series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
+      series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
 
       allSeries.push(series);
       allStats.push(computeStats(series));
