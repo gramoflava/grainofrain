@@ -158,6 +158,8 @@ function setupSmoothingSelector() {
     saveState(state);
     if (state.mode === 'comparison' && hasData) {
       scheduleComparisonApply();
+    } else if (state.mode === 'periodic' && hasData) {
+      applyPeriodic();
     }
     const smoothingOv = document.getElementById('smoothing-selector-ov');
     if (smoothingOv) smoothingOv.value = e.target.value;
