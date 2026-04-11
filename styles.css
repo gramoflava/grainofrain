@@ -511,7 +511,7 @@ main.container-fluid {
 }
 
 .city-search-input {
-  width: 110px;
+  width: 125px;
   padding: 0.35rem 0.6rem;
   font-size: 0.85rem;
   border-radius: 6px;
@@ -664,9 +664,9 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 #start, #end {
-  width: 120px;
-  flex: 1 1 80px;
-  min-width: 70px;
+  width: 140px;
+  flex: 0 0 auto;
+  min-width: 130px;
 }
 
 /* Search Pill Group */
@@ -1228,35 +1228,28 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 @media (max-width: 999px) {
   #controls {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-areas:
+      "left right"
+      "center center";
+    grid-template-columns: 1fr auto;
     gap: 0.6rem;
+    width: 100%;
   }
 
-  .controls-left, 
-  .controls-right {
-    flex: 1 1 auto;
+  .controls-left {
+    grid-area: left;
+    flex-wrap: wrap;
   }
   
-  /* Ensure actions align to right edge */
   .controls-right {
+    grid-area: right;
     justify-content: flex-end;
   }
 
-  /* Override desktop top row to sit next to each other if possible */
-  .header-top-row-mobile {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .controls-left, .controls-right {
-    flex-wrap: wrap;
-  }
-
   .controls-center {
+    grid-area: center;
     width: 100%;
-    margin-top: 0.2rem;
   }
   
   .mode-controls {
@@ -1285,6 +1278,13 @@ input[type="date"]::-webkit-datetime-edit-text {
     height: 38px;
     width: 100%;
   }
+  
+  /* Ensure date inputs expand properly on mobile */
+  #start, #end {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+  }
 
   .search-pill-group input:focus, 
   .search-pill-group select:focus {
@@ -1293,10 +1293,13 @@ input[type="date"]::-webkit-datetime-edit-text {
   
   .city-tags-container {
     width: 100%;
+    display: flex;
+    flex-wrap: wrap;
   }
   
   .city-input-wrapper {
     width: 100%;
+    flex: 1;
   }
   
   .city-search-input {
@@ -1313,6 +1316,7 @@ input[type="date"]::-webkit-datetime-edit-text {
   .period-selectors {
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
