@@ -672,7 +672,6 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 #start, #end {
-  display: block;
   flex: 0 0 auto;
   width: 140px;
   min-width: 130px;
@@ -1328,7 +1327,6 @@ input[type="date"]::-webkit-datetime-edit-text {
   
   /* Bypass Safari's flex-grow bug on dates by using strict percentage widths */
   #start, #end {
-    display: block;
     width: calc(50% - 0.2rem) !important;
     min-width: 0;
     flex: 0 0 auto;
