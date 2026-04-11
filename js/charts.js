@@ -103,6 +103,25 @@ function _precipAxisFormatter(precipAxisMax) {
   };
 }
 
+function _tempAxisBoundsAll(allSeries) {
+  let min = Infinity;
+  let max = -Infinity;
+  allSeries.forEach(s => {
+    if (!s) return;
+    const sMax = Math.max(...(s.tempMax || []).filter(v => isFiniteNumber(v)));
+    const sMin = Math.min(...(s.tempMin || []).filter(v => isFiniteNumber(v)));
+    if (isFiniteNumber(sMax) && sMax > max) max = sMax;
+    if (isFiniteNumber(sMin) && sMin < min) min = sMin;
+  });
+  if (min === Infinity) min = 0;
+  if (max === -Infinity) max = 30;
+  
+  return {
+    min: Math.floor((min - 2) / 5) * 5,
+    max: Math.ceil((max + 2) / 5) * 5
+  };
+}
+
 function _monthMarkLines(x, gridColor) {
   const data = [];
   for (let i = 1; i < x.length; i++) {
@@ -127,6 +146,7 @@ function _renderTempChart(ch, series, color, prefs, label, asterisk) {
   const x = series.x;
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
   const focus = _activeTempFocus;
+  const bounds = _tempAxisBoundsAll([series]);
 
   const focusCfg = {
     max:  { lineW: [2, 0, 0], lineColor: '#EF5350', norm: series.normMax },
@@ -179,7 +199,7 @@ function _renderTempChart(ch, series, color, prefs, label, asterisk) {
     tooltip, dataZoom: _dataZoom(),
     xAxis: _baseXAxis(x),
     yAxis: [
-      { type: 'value', interval: 5, splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } }, axisLabel: { show: true, color: axisLabelColor, fontSize: 11, formatter: '{value}' }, axisTick: { show: false }, axisLine: { show: false } }
+      { type: 'value', min: bounds.min, max: bounds.max, interval: 5, splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } }, axisLabel: { show: true, color: axisLabelColor, fontSize: 11, formatter: '{value}' }, axisTick: { show: false }, axisLine: { show: false } }
     ],
     series: tempSeries
   }, { notMerge: true });
@@ -193,6 +213,7 @@ function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk)
   const x = allSeries[0].x;
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
   const focus = _activeTempFocus;
+  const bounds = _tempAxisBoundsAll(allSeries);
 
   // Which data field and norm field to use
   const focusDataKey = focus === 'max' ? 'tempMax' : focus === 'min' ? 'tempMin' : 'tempMean';
@@ -267,7 +288,7 @@ function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk)
     tooltip, dataZoom: _dataZoom(),
     xAxis: _baseXAxis(x),
     yAxis: [
-      { type: 'value', interval: 5, splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } }, axisLabel: { show: true, color: axisLabelColor, fontSize: 11, formatter: '{value}' }, axisTick: { show: false }, axisLine: { show: false } }
+      { type: 'value', min: bounds.min, max: bounds.max, interval: 5, splitLine: { show: prefs.showGrid, lineStyle: { color: gridColor } }, axisLabel: { show: true, color: axisLabelColor, fontSize: 11, formatter: '{value}' }, axisTick: { show: false }, axisLine: { show: false } }
     ],
     series
   }, { notMerge: true });
