@@ -1,21 +1,21 @@
 # Grain of Rain
 
-A client-side weather data analysis tool for exploring historical and current weather patterns across multiple cities.
+A client-side weather data analysis tool for exploring weather history across multiple cities.
 
 🌐 **[Try it live](https://grainofrain.gramoflava.xyz)** | 📦 **[Source code](https://github.com/gramoflava/grainofrain)**
 
 ## Philosophy
 
-**Grain of Rain** is built on three core principles:
+**Grain of Rain** is built on four core principles:
 
 ### 1. Complete Client-Side Operation
-- Zero server infrastructure — runs entirely in your browser
-- Direct integration with open weather APIs (Open-Meteo)
-- Your data stays on your device, complete privacy by design
-- No accounts, no tracking, no data collection
+- No own backend or server infrastructure — runs entirely in your browser
+- Direct integration with third-party open weather APIs (Open-Meteo and optional IP geolocation)
+- We do not need your data to operate the app — the goal is to give you direct access to open data
+- No accounts, no tracking, no app-side data collection
 
 ### 2. Single-Screen Information Density
-- All relevant data visible at once on desktop — no hidden panels
+- All relevant data visible at once on desktop within reason — no hidden panels for the core workflow
 - Compare up to 3 cities or time periods side-by-side in a single view
 - Statistical summaries and visual charts coexist on one page
 - Dense information presentation without clutter
@@ -27,6 +27,11 @@ A client-side weather data analysis tool for exploring historical and current we
 - Periodic analysis to compare climate evolution across years
 - Climate deviation tracking (actual vs. climate normals)
 - Flexible date ranges from single days to full years
+
+### 4. Cache-First Efficiency
+- Cache weather requests locally to keep repeat views fast and reduce unnecessary API traffic
+- Prefetch enough padding for all available smoothing windows so switching smoothing does not normally trigger another request
+- Work within third-party API rate limits while trying to keep the experience smooth
 
 ## Analysis Modes
 
@@ -53,7 +58,7 @@ A client-side weather data analysis tool for exploring historical and current we
 ### Raw Data Management Mode
 - Browse, inspect, and manage all locally cached weather data
 - Collapsible city tree with per-entry storage size indicators
-- Load any ERA5 parameter (24 variables across 6 groups) for any city and date range — beyond what the other modes fetch
+- Load ERA5 parameters across multiple groups for any city and date range — beyond what the other modes fetch
 - Preview any stored dataset as a chart; aggregate entries include a field picker to switch between all available parameters
 - Selectively delete individual entries to free up space
 
@@ -71,8 +76,9 @@ Built with vanilla JavaScript and minimal dependencies to ensure:
 - Fast loading and instant responsiveness
 - Long-term maintainability without framework lock-in
 - Full transparency — inspect and understand every line
-- Works offline once loaded (with cached data)
+- Cached datasets remain available locally, while new searches and uncached ranges still depend on third-party APIs
 - Persistent local cache via IndexedDB — previously fetched data loads instantly on return visits
+- Request padding is prefetched for the available smoothing windows to avoid unnecessary repeat fetches when switching smoothing
 - Icons: 28px from [Tabler Icons](https://tabler.io/icons)
 
 ## Development Philosophy
