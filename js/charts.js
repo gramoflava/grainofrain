@@ -108,11 +108,23 @@ function _tempAxisBoundsAll(allSeries) {
   let max = -Infinity;
   allSeries.forEach(s => {
     if (!s) return;
-    const sMax = Math.max(...(s.tempMax || []).filter(v => isFiniteNumber(v)));
-    const sMin = Math.min(...(s.tempMin || []).filter(v => isFiniteNumber(v)));
-    if (isFiniteNumber(sMax) && sMax > max) max = sMax;
-    if (isFiniteNumber(sMin) && sMin < min) min = sMin;
+    
+    const candidates = [
+      ...(s.tempMax || []),
+      ...(s.tempMin || []),
+      ...(s.normMax || []),
+      ...(s.normMin || []),
+      ...(s.norm || [])
+    ].filter(v => isFiniteNumber(v));
+    
+    if (candidates.length > 0) {
+      const localMax = Math.max(...candidates);
+      const localMin = Math.min(...candidates);
+      if (localMax > max) max = localMax;
+      if (localMin < min) min = localMin;
+    }
   });
+  
   if (min === Infinity) min = 0;
   if (max === -Infinity) max = 30;
   
