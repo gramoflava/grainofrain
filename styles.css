@@ -502,8 +502,11 @@ main.container-fluid {
 
 .city-input-wrapper {
   position: relative;
-  flex: 0 0 auto;
+  flex: 1 1 0%;
+  width: 100%;
+  min-width: 120px;
   display: flex;
+  align-items: center;
   gap: 2px;
   transition: all 0.2s ease;
 }
@@ -513,7 +516,10 @@ main.container-fluid {
 }
 
 .city-search-input {
-  width: 145px;
+  display: block;
+  width: 100%;
+  flex: 1 1 auto;
+  min-width: 120px;
   padding: 0.35rem 0.6rem;
   font-size: 0.85rem;
   border-radius: 6px;
@@ -666,8 +672,9 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 #start, #end {
-  width: 140px;
+  display: block;
   flex: 0 0 auto;
+  width: 140px;
   min-width: 130px;
 }
 
@@ -683,24 +690,26 @@ input[type="date"]::-webkit-datetime-edit-text {
   box-shadow: var(--shadow-sm);
 }
 
-.search-pill-group input, 
-.search-pill-group select, 
-.search-pill-group .auto-location-btn {
+#controls .search-pill-group input, 
+#controls .search-pill-group select, 
+#controls .search-pill-group .auto-location-btn {
   border: none;
   background: transparent;
   box-shadow: none;
   height: 28px;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.search-pill-group input:hover, 
-.search-pill-group select:hover,
-.search-pill-group .auto-location-btn:hover {
+#controls .search-pill-group input:hover, 
+#controls .search-pill-group select:hover,
+#controls .search-pill-group .auto-location-btn:hover {
   background: var(--bg-hover);
 }
 
-.search-pill-group input:focus, 
-.search-pill-group select:focus {
-  background: var(--bg-hover);
+#controls .search-pill-group input:focus, 
+#controls .search-pill-group select:focus {
+  background: var(--bg-focus);
   box-shadow: none;
   outline: none;
 }
@@ -1121,7 +1130,7 @@ input[type="date"]::-webkit-datetime-edit-text {
   }
 
   .chart-card:first-child {
-    height: 250px;
+    height: 380px;
     flex: none;
   }
 
@@ -1232,27 +1241,38 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 @media (max-width: 999px) {
   #controls {
-    display: grid;
-    grid-template-areas:
-      "left right"
-      "center center";
-    grid-template-columns: 1fr auto;
+    display: flex;
+    flex-direction: column;
     gap: 0.6rem;
     width: 100%;
+    position: relative;
   }
 
   .controls-left {
-    grid-area: left;
+    display: flex;
     flex-wrap: wrap;
+    gap: 0.6rem;
+    width: 100%;
+    padding-right: 120px; /* Preserve space for absolute action buttons */
   }
   
+  #mode-selector,
+  #smoothing-selector {
+    flex: 1 1 auto;
+    min-width: 110px;
+    text-overflow: ellipsis;
+  }
+
   .controls-right {
-    grid-area: right;
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
     justify-content: flex-end;
+    align-items: center;
   }
 
   .controls-center {
-    grid-area: center;
     width: 100%;
   }
   
@@ -1272,58 +1292,58 @@ input[type="date"]::-webkit-datetime-edit-text {
     gap: 0.5rem;
   }
 
-  /* Individual inputs in mobile look like normal fields, not a merged pill */
-  .search-pill-group input, 
-  .search-pill-group select, 
-  .search-pill-group .auto-location-btn {
-    border: 1px solid var(--border-color);
+  /* Make individual rows look like full-width segmented pills on mobile */
+  .city-tags-container,
+  .date-row,
+  .year-tags-container,
+  .period-selectors {
+    display: flex;
+    align-items: center;
     background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2px 4px;
+    width: 100%;
+    gap: 0.4rem;
     box-shadow: var(--shadow-sm);
-    height: 38px;
-    width: 100%;
-  }
-  
-  /* Ensure date inputs expand properly on mobile */
-  #start, #end {
-    width: 100%;
-    min-width: 0;
-    flex: 1;
   }
 
-  .search-pill-group input:focus, 
-  .search-pill-group select:focus {
-    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+  /* Ensure inputs inside the mobile rows act as flush inlays */
+  #controls .search-pill-group input, 
+  #controls .search-pill-group select, 
+  #controls .search-pill-group .auto-location-btn {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    height: 38px;
+    -webkit-appearance: none;
+    appearance: none;
   }
   
-  .city-tags-container {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
+  /* Bypass Safari's flex-grow bug on dates by using strict percentage widths */
+  #start, #end {
+    display: block;
+    width: calc(50% - 0.2rem) !important;
+    min-width: 0;
+    flex: 0 0 auto;
+    padding: 0.2rem 0;
   }
   
   .city-input-wrapper {
+    flex: 1 1 auto;
     width: 100%;
-    flex: 1;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
   }
   
   .city-search-input {
+    display: block;
     width: 100%;
+    flex: 1 1 auto;
+    min-width: 120px;
   }
   
-  .date-row {
-    width: 100%;
-    display: flex;
-    gap: 0.5rem;
-  }
-  
-  .year-tags-container,
-  .period-selectors {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
   .year-input,
   #period-type,
   #controls-progression select,
