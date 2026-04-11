@@ -20,190 +20,134 @@
   <main class="container-fluid">
     <header id="config-bar">
       <form id="controls" aria-label="Data configuration">
-        <div class="controls-row">
-          <select id="mode-selector" class="hide-md" aria-label="Analysis mode">
+        
+        <!-- Left: App Modes -->
+        <div class="controls-left">
+          <select id="mode-selector" aria-label="Analysis mode">
             <option value="comparison">Overview</option>
             <option value="periodic">Periodic</option>
             <option value="progression">Progression</option>
             <option value="rawdata">Raw Data</option>
           </select>
-
-          <select id="smoothing-selector" class="hide-md" aria-label="Smoothing">
+          <select id="smoothing-selector" aria-label="Smoothing">
             <option value="0">No smoothing</option>
             <option value="5">5 days</option>
             <option value="14">14 days</option>
           </select>
+        </div>
 
+        <!-- Center: Primary Parameters (The Search Pill) -->
+        <div class="controls-center">
+          
           <!-- Comparison Mode Controls -->
           <div id="controls-comparison" class="mode-controls">
-            <div class="city-tags-container">
-              <div id="city-tags" class="city-tags"></div>
-              <div class="city-input-wrapper">
-                <input
-                  id="city-search"
-                  class="city-search-input"
-                  type="search"
-                  name="search-location"
-                  placeholder="Add city..."
-                  autocomplete="off"
-                  autocorrect="off"
-                  autocapitalize="off"
-                  spellcheck="false"
-                  aria-autocomplete="list"
-                  aria-expanded="false"
-                />
-                <button id="auto-location-btn" type="button" class="auto-location-btn" title="Auto-detect location">
-                  <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
-                </button>
-                <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
+            <div class="search-pill-group">
+              <div class="city-tags-container">
+                <div id="city-tags" class="city-tags"></div>
+                <div class="city-input-wrapper">
+                  <input id="city-search" class="city-search-input" type="search" name="search-location" placeholder="Add city..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false"/>
+                  <button id="auto-location-btn" type="button" class="auto-location-btn" title="Auto-detect location">
+                    <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
+                  </button>
+                  <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
+                </div>
               </div>
-            </div>
-
-            <div class="date-row">
-              <input id="start" type="date" />
-              <input id="end" type="date" />
+              <div class="pill-divider hide-md-flex"></div>
+              <div class="date-row">
+                <input id="start" type="date" />
+                <span class="date-separator hide-md-flex">→</span>
+                <input id="end" type="date" />
+              </div>
             </div>
           </div>
 
           <!-- Periodic Mode Controls -->
           <div id="controls-periodic" class="mode-controls hidden">
-            <div class="city-input-wrapper">
-              <input
-                id="periodic-city-search"
-                class="city-search-input"
-                type="search"
-                placeholder="City"
-                autocomplete="off"
-                autocorrect="off"
-                autocapitalize="off"
-                spellcheck="false"
-                aria-autocomplete="list"
-                aria-expanded="false"
-              />
-              <button id="auto-location-periodic-btn" type="button" class="auto-location-btn" title="Auto-detect location">
-                <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
-              </button>
-              <div id="periodic-city-dropdown" class="city-dropdown" role="listbox"></div>
-            </div>
-
-            <div class="year-tags-container">
-              <div id="year-tags" class="year-tags"></div>
-              <input
-                id="year-input"
-                class="year-input"
-                type="number"
-                placeholder="Add year..."
-                min="1940"
-                max="2100"
-              />
-            </div>
-
-            <div class="date-row">
-              <input id="period-start" type="text" placeholder="MM-DD start" pattern="\d{2}-\d{2}" />
-              <input id="period-end" type="text" placeholder="MM-DD end" pattern="\d{2}-\d{2}" />
+            <div class="search-pill-group">
+              <div class="city-tags-container">
+                <div class="city-input-wrapper">
+                  <input id="periodic-city-search" class="city-search-input" type="search" placeholder="City" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false"/>
+                  <button id="auto-location-periodic-btn" type="button" class="auto-location-btn" title="Auto-detect location">
+                    <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
+                  </button>
+                  <div id="periodic-city-dropdown" class="city-dropdown" role="listbox"></div>
+                </div>
+              </div>
+              <div class="pill-divider hide-md-flex"></div>
+              <div class="year-tags-container">
+                <div id="year-tags" class="year-tags"></div>
+                <input id="year-input" class="year-input" type="number" placeholder="Add year..." min="1940" max="2100"/>
+              </div>
+              <div class="pill-divider hide-md-flex"></div>
+              <div class="date-row">
+                <input id="period-start" type="text" placeholder="MM-DD start" pattern="\d{2}-\d{2}" />
+                <span class="date-separator hide-md-flex">→</span>
+                <input id="period-end" type="text" placeholder="MM-DD end" pattern="\d{2}-\d{2}" />
+              </div>
             </div>
           </div>
 
           <!-- Progression Mode Controls -->
           <div id="controls-progression" class="mode-controls hidden">
-            <div class="city-input-wrapper">
-              <input
-                id="progression-city-search"
-                class="city-search-input"
-                type="search"
-                placeholder="City"
-                autocomplete="off"
-                autocorrect="off"
-                autocapitalize="off"
-                spellcheck="false"
-                aria-autocomplete="list"
-                aria-expanded="false"
-              />
-              <button id="auto-location-progression-btn" type="button" class="auto-location-btn" title="Auto-detect location">
-                <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
-              </button>
-              <div id="progression-city-dropdown" class="city-dropdown" role="listbox"></div>
+            <div class="search-pill-group">
+              <div class="city-tags-container">
+                <div class="city-input-wrapper">
+                  <input id="progression-city-search" class="city-search-input" type="search" placeholder="City" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false"/>
+                  <button id="auto-location-progression-btn" type="button" class="auto-location-btn" title="Auto-detect location">
+                    <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
+                  </button>
+                  <div id="progression-city-dropdown" class="city-dropdown" role="listbox"></div>
+                </div>
+              </div>
+              <div class="pill-divider hide-md-flex"></div>
+              <div class="period-selectors">
+                <select id="period-type">
+                  <option value="year">Whole year</option>
+                  <option value="season">Season</option>
+                  <option value="month">Month</option>
+                  <option value="day">Specific day</option>
+                </select>
+                <div id="period-config-container">
+                  <select id="season-select" style="display: none;">
+                    <option value="winter">Winter</option>
+                    <option value="spring">Spring</option>
+                    <option value="summer">Summer</option>
+                    <option value="fall">Fall</option>
+                  </select>
+                  <select id="month-select" style="display: none;">
+                    <option value="1">January</option> <option value="2">February</option> <option value="3">March</option>
+                    <option value="4">April</option> <option value="5">May</option> <option value="6">June</option>
+                    <option value="7">July</option> <option value="8">August</option> <option value="9">September</option>
+                    <option value="10">October</option> <option value="11">November</option> <option value="12">December</option>
+                  </select>
+                  <input id="day-select" type="text" placeholder="MM-DD" pattern="\d{2}-\d{2}" style="display: none;" />
+                </div>
+              </div>
+              <div class="pill-divider hide-md-flex"></div>
+              <div class="date-row">
+                <input id="year-from" type="number" placeholder="From year" min="1940" max="2100" />
+                <span class="date-separator hide-md-flex">→</span>
+                <input id="year-to" type="number" placeholder="To year" min="1940" max="2100" />
+              </div>
             </div>
-
-            <select id="period-type">
-              <option value="year">Whole year</option>
-              <option value="season">Season</option>
-              <option value="month">Month</option>
-              <option value="day">Specific day</option>
-            </select>
-
-            <div id="period-config-container">
-              <select id="season-select" style="width: 100px; display: none;">
-                <option value="winter">Winter</option>
-                <option value="spring">Spring</option>
-                <option value="summer">Summer</option>
-                <option value="fall">Fall</option>
-              </select>
-
-              <select id="month-select" style="width: 100px; display: none;">
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-              </select>
-
-              <input id="day-select" type="text" placeholder="MM-DD" pattern="\d{2}-\d{2}" style="width: 100px; display: none;" />
-            </div>
-
-            <div class="date-row">
-              <input id="year-from" type="number" placeholder="From year" min="1940" max="2100" style="width: 100px;" />
-              <input id="year-to" type="number" placeholder="To year" min="1940" max="2100" style="width: 100px;" />
-            </div>
-          </div>
-
-          <div class="spacer"></div>
-
-          <div class="action-buttons">
-            <button id="copy" type="button" class="icon-btn" title="Copy charts">
-              <img src="icons/copy.svg" alt="Copy" width="20" height="20">
-            </button>
-            <button id="download" type="button" class="icon-btn" title="Download charts">
-              <img src="icons/download.svg" alt="Download" width="20" height="20">
-            </button>
-            <button id="reset" type="button" class="icon-btn danger hide-md" title="Reset app">
-              <img src="icons/reset.svg" alt="Reset" width="20" height="20">
-            </button>
-            <button id="overflow-btn" type="button" class="icon-btn overflow-btn" title="More options" aria-expanded="false">
-              <img src="icons/dots.svg" alt="More" width="20" height="20">
-            </button>
           </div>
 
         </div>
-      </form>
 
-      <!-- Overflow panel for collapsed controls -->
-      <div id="overflow-panel" class="overflow-panel hidden">
-        <div class="overflow-row">
-          <select id="mode-selector-ov" aria-label="Analysis mode">
-            <option value="comparison">Overview</option>
-            <option value="periodic">Periodic</option>
-            <option value="progression">Progression</option>
-            <option value="rawdata">Raw Data</option>
-          </select>
-          <select id="smoothing-selector-ov" aria-label="Smoothing">
-            <option value="0">No smoothing</option>
-            <option value="5">5 days</option>
-            <option value="14">14 days</option>
-          </select>
-          <button id="reset-ov" type="button" class="icon-btn danger" title="Reset app">
+        <!-- Right: Actions -->
+        <div class="controls-right">
+          <button id="copy" type="button" class="icon-btn" title="Copy charts">
+            <img src="icons/copy.svg" alt="Copy" width="20" height="20">
+          </button>
+          <button id="download" type="button" class="icon-btn" title="Download charts">
+            <img src="icons/download.svg" alt="Download" width="20" height="20">
+          </button>
+          <button id="reset" type="button" class="icon-btn danger" title="Reset app">
             <img src="icons/reset.svg" alt="Reset" width="20" height="20">
           </button>
         </div>
-        <div id="overflow-tags" class="overflow-tags"></div>
-      </div>
+
+      </form>
     </header>
 
     <div id="workspace">

@@ -414,20 +414,26 @@ main.container-fluid {
 #controls {
   display: flex;
   flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
 }
 
-.controls-row {
+.controls-left,
+.controls-right {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.35rem;
-  flex: 1;
-  flex-wrap: nowrap;
+  gap: 0.4rem;
+  flex: 0 0 auto;
 }
 
-#controls .spacer {
+.controls-center {
   flex: 1 1 auto;
-  min-width: 0.5rem;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
 }
 
 /* City Tags Container */
@@ -505,24 +511,24 @@ main.container-fluid {
 }
 
 .city-search-input {
-  width: 90px;
-  padding: 0.25rem 0.4rem;
-  font-size: 0.8rem;
-  border-radius: 4px;
+  width: 110px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
-  height: 28px;
+  height: 32px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .auto-location-btn {
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 6px;
   background: var(--input-bg);
   color: var(--text-primary);
   font-size: 14px;
@@ -541,7 +547,6 @@ main.container-fluid {
 .auto-location-btn:hover:not(:disabled) {
   background: var(--bg-hover);
   border-color: #1e88e5;
-  transform: scale(1.05);
 }
 
 .auto-location-btn:active:not(:disabled) {
@@ -580,13 +585,14 @@ main.container-fluid {
 }
 
 #controls select {
-  padding: 0.25rem 0.4rem;
-  font-size: 0.8rem;
-  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
-  height: 28px;
+  height: 32px;
   flex: 0 0 auto;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
@@ -595,9 +601,9 @@ main.container-fluid {
   appearance: none;
   background-image: url('data:image/svg+xml;utf8,<svg fill="%23607d8b" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
-  background-position: right 0.25rem center;
-  background-size: 1rem;
-  padding-right: 1.5rem;
+  background-position: right 0.3rem center;
+  background-size: 1.1rem;
+  padding-right: 1.8rem;
 }
 
 #controls select:hover {
@@ -617,15 +623,15 @@ main.container-fluid {
 }
 
 #controls input {
-  padding: 0.25rem 0.4rem;
-  font-size: 0.8rem;
-  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
   width: 75px;
   flex: 0 0 auto;
-  height: 28px;
+  height: 32px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -663,14 +669,59 @@ input[type="date"]::-webkit-datetime-edit-text {
   min-width: 70px;
 }
 
+/* Search Pill Group */
+.search-pill-group {
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2px 4px;
+  gap: 0.4rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.search-pill-group input, 
+.search-pill-group select, 
+.search-pill-group .auto-location-btn {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  height: 28px;
+}
+
+.search-pill-group input:hover, 
+.search-pill-group select:hover,
+.search-pill-group .auto-location-btn:hover {
+  background: var(--bg-hover);
+}
+
+.search-pill-group input:focus, 
+.search-pill-group select:focus {
+  background: var(--bg-hover);
+  box-shadow: none;
+  outline: none;
+}
+
+.pill-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-light);
+  margin: 0 0.2rem;
+}
+
+.date-separator {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  user-select: none;
+}
+
 /* Mode controls */
 .mode-controls {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  flex: 1 1 auto;
-  min-width: 0;
-  flex-wrap: nowrap;
+  justify-content: center;
+  width: 100%;
 }
 
 .mode-controls.hidden {
@@ -1172,22 +1223,110 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 /* ========================================
-   Responsive Single-Line Header
+   Responsive Single-Line Header (Mobile Stack)
    ======================================== */
 
-/* Overflow button: hidden on desktop */
-.overflow-btn {
-  display: none !important;
-}
-
-/* At < 1000px: hide low-priority items, show overflow button */
 @media (max-width: 999px) {
-  .hide-md {
-    display: none !important;
+  #controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
   }
 
-  .overflow-btn {
-    display: inline-flex !important;
+  .controls-left, 
+  .controls-right {
+    flex: 1 1 auto;
+  }
+  
+  /* Ensure actions align to right edge */
+  .controls-right {
+    justify-content: flex-end;
+  }
+
+  /* Override desktop top row to sit next to each other if possible */
+  .header-top-row-mobile {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .controls-left, .controls-right {
+    flex-wrap: wrap;
+  }
+
+  .controls-center {
+    width: 100%;
+    margin-top: 0.2rem;
+  }
+  
+  .mode-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .search-pill-group {
+    flex-direction: column;
+    align-items: stretch;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    gap: 0.5rem;
+  }
+
+  /* Individual inputs in mobile look like normal fields, not a merged pill */
+  .search-pill-group input, 
+  .search-pill-group select, 
+  .search-pill-group .auto-location-btn {
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    box-shadow: var(--shadow-sm);
+    height: 38px;
+    width: 100%;
+  }
+
+  .search-pill-group input:focus, 
+  .search-pill-group select:focus {
+    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+  }
+  
+  .city-tags-container {
+    width: 100%;
+  }
+  
+  .city-input-wrapper {
+    width: 100%;
+  }
+  
+  .city-search-input {
+    width: 100%;
+  }
+  
+  .date-row {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .year-tags-container,
+  .period-selectors {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .year-input,
+  #period-type,
+  #controls-progression select,
+  #controls-progression input {
+    flex: 1;
+    width: 100% !important;
+  }
+
+  /* Hide pill dividers and separators on mobile since items stack */
+  .hide-md-flex {
+    display: none !important;
   }
 
   /* Truncate tag names at medium-narrow widths */
@@ -1205,62 +1344,6 @@ input[type="date"]::-webkit-datetime-edit-text {
   .year-tag {
     padding: 0.15rem 0.3rem;
   }
-}
-
-/* Overflow panel: drops below config-bar (position: relative already set in base) */
-.overflow-panel {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 99;
-  background: var(--bg-card);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
-  padding: 0.5rem 0.8rem;
-}
-
-.overflow-panel.hidden {
-  display: none;
-}
-
-.overflow-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.overflow-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.3rem;
-  min-height: 0;
-}
-
-.overflow-tags:empty {
-  display: none;
-}
-
-/* In overflow panel, show full tag names */
-.overflow-panel .city-tag-name,
-.overflow-panel .year-tag-name {
-  max-width: none !important;
-  display: inline !important;
-}
-
-/* Style overflow selects like main bar selects */
-#overflow-panel select {
-  padding: 0.25rem 0.4rem;
-  font-size: 0.8rem;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background: var(--input-bg);
-  color: var(--text-primary);
-  cursor: pointer;
 }
 
 /* ========================================
