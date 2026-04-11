@@ -136,8 +136,12 @@ function _tempAxisBoundsAll(allSeries) {
 
 function _monthMarkLines(x, gridColor) {
   const data = [];
+  const monthPart = (value) => {
+    if (typeof value !== 'string') return '';
+    return value.length >= 7 && value[4] === '-' ? value.slice(5, 7) : value.slice(0, 2);
+  };
   for (let i = 1; i < x.length; i++) {
-    if (x[i].slice(5, 7) !== x[i - 1].slice(5, 7)) {
+    if (monthPart(x[i]) !== monthPart(x[i - 1])) {
       data.push({ xAxis: x[i] });
     }
   }

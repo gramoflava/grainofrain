@@ -32,12 +32,21 @@ export function addDays(dateStr, days) {
 
 export function formatCityLabel(city) {
   if (!city) return '';
-  return city.name;
+  const parts = [city.name].filter(Boolean);
+  if (city.admin1 && city.admin1 !== city.name) parts.push(city.admin1);
+  if (city.country && city.country !== city.admin1 && city.country !== city.name) parts.push(city.country);
+  return parts.join(', ');
 }
 
 export function getUniqueCityKey(city) {
   if (!city) return '';
-  return city.id ? `city_${city.id}` : `${city.name}_${city.country}_${city.lat}_${city.lon}`;
+  const lat = Number(city.lat);
+  const lon = Number(city.lon);
+  if (Number.isFinite(lat) && Number.isFinite(lon)) {
+    return `city_${lat.toFixed(4)}_${lon.toFixed(4)}`;
+  }
+  if (city.id != null) return `city_${city.id}`;
+  return [city.name || '', city.admin1 || '', city.country || ''].join('_');
 }
 
 export function average(arr) {

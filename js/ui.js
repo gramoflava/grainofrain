@@ -10,7 +10,7 @@ import { fillStats, fillStatsPeriodic, fillStatsProgression } from './stats.js';
 import { showMessage, createProgressToast, updateProgressToast, removeProgressToast, showRateLimitWarning, setAbortControllerRef } from './toast.js';
 import {
   isFiniteNumber, escapeHtml, sanitizeDate, isoToday, isoYearStart,
-  addDays, formatCityLabel, average, sum,
+  addDays, formatCityLabel, getUniqueCityKey, average, sum,
   arrayMax, arrayMin, arrayMean, arraySum,
   applySmoothingAndTrim, detectPlatform
 } from './utils.js';
@@ -27,6 +27,8 @@ const COLOR_PALETTE = [
 ];
 const MM_DD_REGEX = /^\d{2}-\d{2}$/;
 const MAX_CITIES = 3;
+const MAX_SMOOTHING_WINDOW = 14;
+const MAX_SMOOTHING_PADDING = Math.floor(MAX_SMOOTHING_WINDOW / 2);
 
 let state = loadState();
 const charts = initCharts();
@@ -143,6 +145,7 @@ function setupModeSelector() {
 
   modeSelector.addEventListener('change', (e) => {
     state.mode = e.target.value;
+    saveState(state);
     switchMode(state.mode);
     updateSmoothingVisibility();
     const modeOv = document.getElementById('mode-selector-ov');
@@ -296,9 +299,20 @@ function setupCitySelectors() {
   });
 }
 
+function hasSelectedCity(city) {
+  const key = getUniqueCityKey(city);
+  return selectedCities.some(candidate => getUniqueCityKey(candidate) === key);
+}
+
+function getCityTagLabel(city) {
+  const duplicateNameCount = selectedCities.filter(candidate => candidate?.name === city?.name).length;
+  if (duplicateNameCount > 1) return formatCityLabel(city);
+  return city?.name || '';
+}
+
 function addCityTag(city) {
   if (selectedCities.length >= MAX_CITIES) return;
-  if (selectedCities.some(c => c.name === city.name)) return;
+  if (hasSelectedCity(city)) return;
 
   saveLocation(city.lat, city.lon, city);
   selectedCities.push(city);
@@ -325,9 +339,10 @@ function renderCityTags() {
     const key = getCityColorKey(city);
     const color = assignColor(key);
     const hideClass = index > 0 ? ' hide-md' : '';
+    const fullLabel = formatCityLabel(city);
     return `
-      <div class="city-tag${hideClass}" data-color-key="${escapeHtml(key)}" style="background:${color}">
-        <span class="city-tag-name">${escapeHtml(city.name)}</span>
+      <div class="city-tag${hideClass}" data-color-key="${escapeHtml(key)}" style="background:${color}" title="${escapeHtml(fullLabel)}">
+        <span class="city-tag-name">${escapeHtml(getCityTagLabel(city))}</span>
         <span class="city-tag-remove" data-index="${index}">×</span>
       </div>
     `;
@@ -365,7 +380,7 @@ function updateCitySearchState() {
 function selectPeriodicCity(city) {
   saveLocation(city.lat, city.lon, city);
   periodicCity = city;
-  periodicCitySearchInput.value = formatCityLabel(city);
+  periodicCitySearchInput.value = city.name || '';
   periodicCityDropdown.classList.remove('visible');
   if (state.mode === 'periodic') showModeStub('periodic');
 }
@@ -373,7 +388,7 @@ function selectPeriodicCity(city) {
 function selectProgressionCity(city) {
   saveLocation(city.lat, city.lon, city);
   progressionCity = city;
-  progressionCitySearchInput.value = formatCityLabel(city);
+  progressionCitySearchInput.value = city.name || '';
   progressionCityDropdown.classList.remove('visible');
   if (state.mode === 'progression') showModeStub('progression');
 }
@@ -508,9 +523,8 @@ async function applyComparison() {
   endInput.value = endIsToday ? today : endIso;
 
   const smoothing = state.prefs.smoothing || 0;
-  const padding = Math.floor(smoothing / 2);
-  const paddedStart = addDays(startIso, -padding);
-  const paddedEnd = addDays(endIso, padding);
+  const paddedStart = addDays(startIso, -MAX_SMOOTHING_PADDING);
+  const paddedEnd = addDays(endIso, MAX_SMOOTHING_PADDING);
 
   let loadingToast = null;
 
@@ -586,7 +600,6 @@ async function applyPeriodic() {
   }
 
   const smoothing = state.prefs.smoothing || 0;
-  const padding = Math.floor(smoothing / 2);
 
   // Reuse cached raw data when params match and stored padding covers current needs
   const cached = _periodicRaw;
@@ -596,7 +609,7 @@ async function applyPeriodic() {
     JSON.stringify(cached.years) === JSON.stringify(selectedYears) &&
     cached.periodStart === periodStart &&
     cached.periodEnd === periodEnd &&
-    cached.padding >= padding;
+    cached.padding >= MAX_SMOOTHING_PADDING;
 
   let loadingToast = null;
 
@@ -624,8 +637,8 @@ async function applyPeriodic() {
         const year = selectedYears[i];
         const startIso = `${year}-${periodStart}`;
         const endIso = `${year}-${periodEnd}`;
-        const paddedStart = addDays(startIso, -padding);
-        const paddedEnd = addDays(endIso, padding);
+        const paddedStart = addDays(startIso, -MAX_SMOOTHING_PADDING);
+        const paddedEnd = addDays(endIso, MAX_SMOOTHING_PADDING);
 
         const daily = await fetchDaily(periodicCity.lat, periodicCity.lon, paddedStart, paddedEnd, signal);
 
@@ -636,7 +649,15 @@ async function applyPeriodic() {
         entries.push({ daily, startIso, endIso });
       }
 
-      _periodicRaw = { city: periodicCity, years: [...selectedYears], periodStart, periodEnd, padding, entries, normals: sharedNormals };
+      _periodicRaw = {
+        city: periodicCity,
+        years: [...selectedYears],
+        periodStart,
+        periodEnd,
+        padding: MAX_SMOOTHING_PADDING,
+        entries,
+        normals: sharedNormals
+      };
       abortController = null;
     }
 
@@ -656,10 +677,10 @@ async function applyPeriodic() {
       renderAll(charts, allSeries[0], assignColor(getYearColorKey(selectedYears[0])), state.prefs, labels[0]);
     } else {
       const colors = selectedYears.map(y => assignColor(getYearColorKey(y)));
-      renderCompare(charts, allSeries, colors, state.prefs, labels);
+      renderCompare(charts, normalizePeriodicCompareSeries(allSeries), colors, state.prefs, labels);
     }
 
-    fillStatsPeriodic(statsDom, allStats, labels, periodicCity.name, periodStart, periodEnd, smoothing);
+    fillStatsPeriodic(statsDom, allStats, labels, periodicCity.name || 'City', periodStart, periodEnd, smoothing);
     if (loadingToast) removeProgressToast(loadingToast);
 
     showDataView();
@@ -772,7 +793,7 @@ function getPeriodDates(year, periodConfig) {
     return { startDate: `${year}-01-01`, endDate: `${year}-12-31` };
   } else if (periodConfig.type === 'season') {
     const seasons = {
-      winter: { start: '12-01', end: '02-28' },
+      winter: { start: '12-01', end: isLeapYear(year) ? '02-29' : '02-28' },
       spring: { start: '03-01', end: '05-31' },
       summer: { start: '06-01', end: '08-31' },
       fall: { start: '09-01', end: '11-30' }
@@ -792,6 +813,10 @@ function getPeriodDates(year, periodConfig) {
   }
 }
 
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+}
+
 function formatPeriodLabel(periodConfig) {
   if (periodConfig.type === 'year') return 'Whole year';
   if (periodConfig.type === 'season') return periodConfig.value.charAt(0).toUpperCase() + periodConfig.value.slice(1);
@@ -800,6 +825,86 @@ function formatPeriodLabel(periodConfig) {
     return months[parseInt(periodConfig.value, 10) - 1];
   }
   if (periodConfig.type === 'day') return periodConfig.value;
+}
+
+function normalizePeriodicCompareSeries(allSeries) {
+  const axis = [...new Set(allSeries.flatMap(series => (series?.x || []).map(toMonthDayKey)))]
+    .filter(Boolean)
+    .sort();
+
+  const sharedNormMaps = {
+    norm: buildSharedPeriodicFieldMap(allSeries, 'norm'),
+    normMax: buildSharedPeriodicFieldMap(allSeries, 'normMax'),
+    normMin: buildSharedPeriodicFieldMap(allSeries, 'normMin')
+  };
+
+  return allSeries.map(series => {
+    const fieldMaps = {
+      tempMax: buildPeriodicFieldMap(series.x, series.tempMax),
+      tempMin: buildPeriodicFieldMap(series.x, series.tempMin),
+      tempMean: buildPeriodicFieldMap(series.x, series.tempMean),
+      precip: buildPeriodicFieldMap(series.x, series.precip),
+      rain: buildPeriodicFieldMap(series.x, series.rain),
+      snow: buildPeriodicFieldMap(series.x, series.snow),
+      humidity: buildPeriodicFieldMap(series.x, series.humidity),
+      wind: buildPeriodicFieldMap(series.x, series.wind),
+      windMax: buildPeriodicFieldMap(series.x, series.windMax),
+      windGusts: buildPeriodicFieldMap(series.x, series.windGusts),
+      sunshineDuration: buildPeriodicFieldMap(series.x, series.sunshineDuration),
+      daylightDuration: buildPeriodicFieldMap(series.x, series.daylightDuration)
+    };
+
+    return {
+      x: axis,
+      dates: axis,
+      tempMax: axis.map(key => fieldMaps.tempMax.get(key) ?? null),
+      tempMin: axis.map(key => fieldMaps.tempMin.get(key) ?? null),
+      tempMean: axis.map(key => fieldMaps.tempMean.get(key) ?? null),
+      precip: axis.map(key => fieldMaps.precip.get(key) ?? null),
+      rain: axis.map(key => fieldMaps.rain.get(key) ?? null),
+      snow: axis.map(key => fieldMaps.snow.get(key) ?? null),
+      humidity: axis.map(key => fieldMaps.humidity.get(key) ?? null),
+      wind: axis.map(key => fieldMaps.wind.get(key) ?? null),
+      windMax: axis.map(key => fieldMaps.windMax.get(key) ?? null),
+      windGusts: axis.map(key => fieldMaps.windGusts.get(key) ?? null),
+      sunshineDuration: axis.map(key => fieldMaps.sunshineDuration.get(key) ?? null),
+      daylightDuration: axis.map(key => fieldMaps.daylightDuration.get(key) ?? null),
+      norm: sharedNormMaps.norm.size ? axis.map(key => sharedNormMaps.norm.get(key) ?? null) : null,
+      normMax: sharedNormMaps.normMax.size ? axis.map(key => sharedNormMaps.normMax.get(key) ?? null) : null,
+      normMin: sharedNormMaps.normMin.size ? axis.map(key => sharedNormMaps.normMin.get(key) ?? null) : null
+    };
+  });
+}
+
+function buildPeriodicFieldMap(dates, values) {
+  const map = new Map();
+  if (!Array.isArray(dates) || !Array.isArray(values)) return map;
+
+  for (let i = 0; i < dates.length; i++) {
+    const key = toMonthDayKey(dates[i]);
+    if (!key) continue;
+    map.set(key, values[i] ?? null);
+  }
+  return map;
+}
+
+function buildSharedPeriodicFieldMap(allSeries, field) {
+  const map = new Map();
+  allSeries.forEach(series => {
+    if (!Array.isArray(series?.x) || !Array.isArray(series?.[field])) return;
+    for (let i = 0; i < series.x.length; i++) {
+      const key = toMonthDayKey(series.x[i]);
+      const value = series[field][i];
+      if (!key || map.has(key) || !isFiniteNumber(value)) continue;
+      map.set(key, value);
+    }
+  });
+  return map;
+}
+
+function toMonthDayKey(dateStr) {
+  if (typeof dateStr !== 'string') return '';
+  return dateStr.length >= 10 ? dateStr.slice(5, 10) : dateStr;
 }
 
 function aggregateProgressionStats(allStats) {
@@ -873,7 +978,7 @@ function restoreCityTags() {
 function restorePeriodicInputs() {
   if (state.periodic?.city) {
     periodicCity = state.periodic.city;
-    periodicCitySearchInput.value = formatCityLabel(periodicCity);
+    periodicCitySearchInput.value = periodicCity.name || '';
   }
   if (state.periodic?.years.length > 0) {
     selectedYears = [...state.periodic.years];
@@ -887,7 +992,7 @@ function restorePeriodicInputs() {
 function restoreProgressionInputs() {
   if (state.progression?.city) {
     progressionCity = state.progression.city;
-    progressionCitySearchInput.value = formatCityLabel(progressionCity);
+    progressionCitySearchInput.value = progressionCity.name || '';
   }
   if (state.progression?.yearFrom) yearFromInput.value = state.progression.yearFrom;
   if (state.progression?.yearTo) yearToInput.value = state.progression.yearTo;
@@ -938,7 +1043,7 @@ function setupAutoLocationButtons() {
       showMessage(`Maximum ${MAX_CITIES} cities`, 'error');
       return;
     }
-    if (selectedCities.some(c => c.name === city.name)) {
+    if (hasSelectedCity(city)) {
       showMessage('City already added', 'info');
     } else {
       addCityTag(city);
@@ -992,7 +1097,7 @@ async function autoApplyOnLoad() {
 async function autoDetectLocation() {
   try {
     const city = await getLocationFromIP();
-    if (!selectedCities.some(c => c.name === city.name)) {
+    if (!hasSelectedCity(city)) {
       addCityTag(city);
       showMessage(`Detected location: ${city.name}`, 'success');
     }
@@ -1148,7 +1253,7 @@ function buildFilename() {
 // --- Color system ---
 
 function getCityColorKey(city) {
-  return `city:${city.name}|${parseFloat(city.lat).toFixed(2)}|${parseFloat(city.lon).toFixed(2)}`;
+  return `city:${getUniqueCityKey(city)}`;
 }
 
 function getYearColorKey(year) {
@@ -1236,8 +1341,9 @@ function renderOverflowTags() {
       const index = i + 1;
       const key = getCityColorKey(city);
       const color = state.prefs.colorAssignments[key] || assignColor(key);
-      return `<div class="city-tag" data-color-key="${escapeHtml(key)}" style="background:${color}">
-        <span class="city-tag-name">${escapeHtml(city.name)}</span>
+      const fullLabel = formatCityLabel(city);
+      return `<div class="city-tag" data-color-key="${escapeHtml(key)}" style="background:${color}" title="${escapeHtml(fullLabel)}">
+        <span class="city-tag-name">${escapeHtml(getCityTagLabel(city))}</span>
         <span class="city-tag-remove" data-index="${index}">×</span>
       </div>`;
     }).join('');

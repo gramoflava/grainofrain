@@ -16,7 +16,15 @@ async function fetchWithRetry(url, options = {}) {
   const DEFAULT_WAIT = 60000;
   while (true) {
     if (options.signal?.aborted) throw new Error('Cancelled');
-    const res = await fetch(url, options);
+    let res;
+    try {
+      res = await fetch(url, options);
+    } catch (err) {
+      if (err?.name === 'AbortError' || options.signal?.aborted) {
+        throw new Error('Cancelled');
+      }
+      throw err;
+    }
     if (res.status !== 429) return res;
 
     // Respect Retry-After header if present (value in seconds)
@@ -27,8 +35,34 @@ async function fetchWithRetry(url, options = {}) {
     // Notify any listeners so the UI can show a waiting message
     window.dispatchEvent(new CustomEvent('api-rate-limited', { detail: { waitMs: wait } }));
 
-    await new Promise(resolve => setTimeout(resolve, wait));
+    await waitForRetry(wait, options.signal);
   }
+}
+
+function waitForRetry(waitMs, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error('Cancelled'));
+      return;
+    }
+
+    let timeoutId = null;
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      cleanup();
+      reject(new Error('Cancelled'));
+    };
+    const cleanup = () => {
+      if (signal) signal.removeEventListener('abort', onAbort);
+    };
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, waitMs);
+
+    if (signal) signal.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 export async function searchCity(name) {
@@ -302,8 +336,10 @@ export async function getLocationFromIP() {
     const res = await fetch('https://ipapi.co/json/');
     if (!res.ok) throw new Error('IP geolocation failed');
     const data = await res.json();
+    const latitude = Number(data.latitude);
+    const longitude = Number(data.longitude);
 
-    if (!data.latitude || !data.longitude) {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
       throw new Error('Location data unavailable');
     }
 
@@ -315,12 +351,12 @@ export async function getLocationFromIP() {
       if (cities.length > 0) {
         const closest = cities.reduce((best, city) => {
           const dist = Math.sqrt(
-            Math.pow(city.lat - data.latitude, 2) +
-            Math.pow(city.lon - data.longitude, 2)
+            Math.pow(city.lat - latitude, 2) +
+            Math.pow(city.lon - longitude, 2)
           );
           const bestDist = Math.sqrt(
-            Math.pow(best.lat - data.latitude, 2) +
-            Math.pow(best.lon - data.longitude, 2)
+            Math.pow(best.lat - latitude, 2) +
+            Math.pow(best.lon - longitude, 2)
           );
           return dist < bestDist ? city : best;
         });

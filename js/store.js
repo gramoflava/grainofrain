@@ -1,3 +1,5 @@
+const VALID_MODES = new Set(['comparison', 'periodic', 'progression', 'rawdata']);
+
 export function defaultState() {
   const today = new Date().toISOString().slice(0,10);
   const jan1 = today.slice(0,4) + '-01-01';
@@ -68,7 +70,7 @@ function normalizeState(state) {
   return {
     ...base,
     ...state,
-    mode: 'comparison',
+    mode: VALID_MODES.has(state?.mode) ? state.mode : base.mode,
     date: normalizedDate,
     periodic: normalizedPeriodic,
     progression: normalizedProgression,
