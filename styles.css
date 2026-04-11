@@ -455,10 +455,12 @@ main.container-fluid {
 .city-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 0.55rem;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 500;
   color: #fff;
   transition: all 0.15s ease;
@@ -511,7 +513,7 @@ main.container-fluid {
 }
 
 .city-search-input {
-  width: 125px;
+  width: 145px;
   padding: 0.35rem 0.6rem;
   font-size: 0.85rem;
   border-radius: 6px;
@@ -747,10 +749,12 @@ input[type="date"]::-webkit-datetime-edit-text {
 .year-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 0.55rem;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 500;
   color: #fff;
   transition: all 0.15s ease;
@@ -1495,8 +1499,10 @@ input[type="date"]::-webkit-datetime-edit-text {
 
   .city-tag,
   .year-tag {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.8rem;
+    height: 38px;
+    padding: 0 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 6px;
   }
 
   .city-tag-remove,
