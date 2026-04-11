@@ -697,6 +697,9 @@ input[type="date"]::-webkit-datetime-edit-text {
   background: transparent;
   box-shadow: none;
   height: 28px;
+}
+
+#controls .search-pill-group input[type="search"] {
   -webkit-appearance: none;
   appearance: none;
 }
@@ -1316,6 +1319,9 @@ input[type="date"]::-webkit-datetime-edit-text {
     background: transparent;
     box-shadow: none;
     height: 38px;
+  }
+  
+  #controls .search-pill-group input[type="search"] {
     -webkit-appearance: none;
     appearance: none;
   }
