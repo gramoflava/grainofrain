@@ -537,15 +537,16 @@ async function applyComparison() {
         try { normals = await fetchNormals(geo.lat, geo.lon, signal); } catch (e) { normals = null; }
       }
 
-      let series = buildSeries(daily, null, null, normals);
-      if (smoothing > 0) series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
+      let rawSeries = buildSeries(daily, null, null, normals);
+      let trimmedRawSeries = applySmoothingAndTrim(rawSeries, 0, startIso, endIso);
+      let smoothedSeries = smoothing > 0 ? applySmoothingAndTrim(rawSeries, smoothing, startIso, endIso) : trimmedRawSeries;
 
       entities.push({
         type: 'city', name: geo.name, country: geo.country || null,
         admin1: geo.admin1 || null, lat: geo.lat, lon: geo.lon, label
       });
-      allSeries.push(series);
-      allStats.push(computeStats(series));
+      allSeries.push(smoothedSeries);
+      allStats.push(computeStats(trimmedRawSeries));
     }
 
     if (entities.length === 1) {
@@ -642,10 +643,12 @@ async function applyPeriodic() {
     for (let i = 0; i < entries.length; i++) {
       const { daily, startIso, endIso } = entries[i];
       const year = selectedYears[i];
-      let series = buildSeries(daily, null, null, state.prefs.showNormals ? sharedNormals : null);
-      series = applySmoothingAndTrim(series, smoothing, startIso, endIso);
-      allSeries.push(series);
-      allStats.push(computeStats(series));
+      let rawSeries = buildSeries(daily, null, null, state.prefs.showNormals ? sharedNormals : null);
+      let trimmedRawSeries = applySmoothingAndTrim(rawSeries, 0, startIso, endIso);
+      let smoothedSeries = smoothing > 0 ? applySmoothingAndTrim(rawSeries, smoothing, startIso, endIso) : trimmedRawSeries;
+      
+      allSeries.push(smoothedSeries);
+      allStats.push(computeStats(trimmedRawSeries));
       labels.push(year.toString());
     }
 
