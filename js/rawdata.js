@@ -69,6 +69,7 @@ let _selectedKey = null;
 let _loadCity = null;
 let _loadAbort = null;
 let _suggestTimer = null;
+let _lastChartArgs = null;
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -428,6 +429,10 @@ function _renderChart(dates, values, cityName, paramMeta, yearRange) {
     window.addEventListener('resize', _onResize);
   }
 
+  _lastChartArgs = [dates, values, cityName, paramMeta, yearRange];
+  const css = (name) => getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
   const pairs = (dates || []).map((d, i) => [d, values[i] ?? null]);
 
   _chart.setOption({
@@ -436,22 +441,22 @@ function _renderChart(dates, values, cityName, paramMeta, yearRange) {
     grid: { top: 20, right: 16, bottom: 24, left: 56 },
     xAxis: {
       type: 'time',
-      axisLabel: { formatter: v => new Date(v).getFullYear().toString(), color: '#64748b', fontSize: 11 },
-      axisLine: { lineStyle: { color: '#cbd5e1' } },
+      axisLabel: { formatter: v => new Date(v).getFullYear().toString(), color: css('--chart-axis-label'), fontSize: 11 },
+      axisLine: { lineStyle: { color: css('--chart-axis') } },
       splitLine: { show: false }
     },
     yAxis: {
       type: 'value',
       name: paramMeta.unit || '',
-      nameTextStyle: { color: '#64748b', fontSize: 11 },
-      axisLabel: { color: '#64748b', fontSize: 11 },
-      splitLine: { lineStyle: { color: 'rgba(203,213,225,0.4)' } }
+      nameTextStyle: { color: css('--chart-axis-label'), fontSize: 11 },
+      axisLabel: { color: css('--chart-axis-label'), fontSize: 11 },
+      splitLine: { lineStyle: { color: css('--chart-grid') } }
     },
     series: [{
       type: 'line',
       data: pairs,
       symbol: 'none',
-      lineStyle: { color: '#1e88e5', width: 1.5 },
+      lineStyle: { color: css('--accent'), width: 1.5 },
       emphasis: { disabled: true }
     }],
     dataZoom: [
@@ -459,9 +464,9 @@ function _renderChart(dates, values, cityName, paramMeta, yearRange) {
     ],
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e2e8f0',
-      textStyle: { color: '#0f172a', fontSize: 12 },
+      backgroundColor: css('--tooltip-bg'),
+      borderColor: css('--tooltip-line'),
+      textStyle: { color: css('--tooltip-text'), fontSize: 12 },
       formatter: params => {
         const p = params[0];
         if (!p) return '';
@@ -474,6 +479,10 @@ function _renderChart(dates, values, cityName, paramMeta, yearRange) {
 
   setTimeout(() => _chart?.resize(), 50);
 }
+
+document.addEventListener('themechange', () => {
+  if (_chart && _lastChartArgs) _renderChart(..._lastChartArgs);
+});
 
 function _hideFieldPicker() {
   const fp = document.getElementById('rdm-field-picker');

@@ -1185,8 +1185,12 @@ function hideStub() {
 function updateExportButtons() {
   const downloadBtn = document.getElementById('download');
   const copyBtn = document.getElementById('copy');
+  const canCopy = Boolean(navigator.clipboard && typeof ClipboardItem !== 'undefined');
   if (downloadBtn) downloadBtn.disabled = !hasData;
-  if (copyBtn) copyBtn.disabled = !hasData;
+  if (copyBtn) {
+    copyBtn.hidden = !canCopy;
+    copyBtn.disabled = !hasData || !canCopy;
+  }
 }
 
 function handleClipboardError(err) {

@@ -1,13 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="grainofrain">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
   <title>About - Grain of Rain</title>
+  <script>
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem('theme'); } catch (error) {}
+      if (theme === 'light') document.documentElement.classList.add('theme-light');
+      else if (theme === 'dark') document.documentElement.classList.add('theme-dark');
+    })();
+  </script>
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./gramofdesign/gramof.css" />
+  <script defer src="./gramofdesign/theme.js"></script>
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -15,39 +29,30 @@
       padding: 0;
     }
 
-    :root {
-      --bg-primary: #f7f8fb;
-      --bg-card: #fff;
-      --text-primary: #263238;
-      --text-secondary: #607d8b;
-      --border-color: #e0e0e0;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-primary: #1a1a1a;
-        --bg-card: #2a2a2a;
-        --text-primary: #e0e0e0;
-        --text-secondary: #b0b0b0;
-        --border-color: #404040;
-      }
-    }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: var(--font-sans);
       line-height: 1.6;
-      color: var(--text-primary);
-      background: var(--bg-primary);
+      color: var(--text);
+      background-color: var(--bg);
       padding: 2rem 1rem;
     }
 
     .container {
       max-width: 800px;
       margin: 0 auto;
-      background: var(--bg-card);
+      background: var(--surface);
       padding: 3rem;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-md);
+    }
+
+    .about-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
     }
 
     #content h1 {
@@ -86,18 +91,18 @@
     }
 
     #content strong {
-      color: var(--text-primary);
+      color: var(--text);
       font-weight: 600;
     }
 
     #content hr {
       border: none;
-      border-top: 1px solid var(--border-color);
+      border-top: 1px solid var(--line);
       margin: 2rem 0;
     }
 
     #content a {
-      color: #1E88E5;
+      color: var(--accent);
       text-decoration: none;
     }
 
@@ -108,7 +113,7 @@
     .back-link {
       display: inline-block;
       margin-top: 2rem;
-      color: #1E88E5;
+      color: var(--accent);
       text-decoration: none;
       font-size: 0.9rem;
     }
@@ -145,6 +150,18 @@
 </head>
 <body>
   <div class="container">
+    <div class="about-head">
+      <a href="index.html" class="back-link" style="margin-top: 0;">← Grain of Rain</a>
+      <div class="segmented segmented--icon" role="group" aria-label="Color theme" data-theme-switch>
+        <button class="segmented__btn" type="button" data-theme="light" aria-label="Light" title="Light">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.828 14.828a4 4 0 1 0 -5.656 -5.656a4 4 0 0 0 5.656 5.656z"/><path d="M6.343 17.657l-1.414 1.414M6.343 6.343l-1.414 -1.414M17.657 6.343l1.414 -1.414M17.657 17.657l1.414 1.414M12 20v2M12 2v2M20 12h2M2 12h2"/></svg>
+        </button>
+        <button class="segmented__btn" type="button" data-theme="auto" aria-label="Auto" title="Auto"><span>A</span></button>
+        <button class="segmented__btn" type="button" data-theme="dark" aria-label="Dark" title="Dark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></svg>
+        </button>
+      </div>
+    </div>
     <div id="content"></div>
     <a href="index.html" class="back-link">← Back to Grain of Rain</a>
   </div>

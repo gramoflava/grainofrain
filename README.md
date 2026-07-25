@@ -80,6 +80,8 @@ Built with vanilla JavaScript and minimal dependencies to ensure:
 - Persistent local cache via IndexedDB — previously fetched data loads instantly on return visits
 - Request padding is prefetched for the available smoothing windows to avoid unnecessary repeat fetches when switching smoothing
 - Icons: 28px from [Tabler Icons](https://tabler.io/icons)
+- Shared visual language, theme switching, and UI tokens from the bundled
+  [`gramofdesign`](./gramofdesign/) system
 
 ## Development Philosophy
 

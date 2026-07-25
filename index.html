@@ -1,24 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="grainofrain">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
   <title>Grain of Rain</title>
+  <script>
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem('theme'); } catch (error) {}
+      if (theme === 'light') document.documentElement.classList.add('theme-light');
+      else if (theme === 'dark') document.documentElement.classList.add('theme-dark');
+    })();
+  </script>
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=2" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./gramofdesign/gramof.css" />
+  <link rel="stylesheet" href="./styles.css?v=3" />
+  <script defer src="./gramofdesign/theme.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script type="module" src="./js/ui.js?v=2"></script>
 </head>
 <body>
-  <main class="container-fluid">
-    <header id="config-bar">
+  <main class="container-fluid app">
+    <header id="config-bar" class="appbar">
       <form id="controls" aria-label="Data configuration">
         
         <!-- Left: App Modes -->
@@ -47,7 +58,7 @@
                 <div class="city-input-wrapper">
                   <input id="city-search" class="city-search-input" type="search" name="search-location" placeholder="Add city..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false"/>
                   <button id="auto-location-btn" type="button" class="auto-location-btn" title="Auto-detect location">
-                    <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
+                    <span class="icon-mask icon-mask--map-pin" aria-hidden="true"></span>
                   </button>
                   <div id="city-dropdown" class="city-dropdown" role="listbox"></div>
                 </div>
@@ -68,7 +79,7 @@
                 <div class="city-input-wrapper">
                   <input id="periodic-city-search" class="city-search-input" type="search" placeholder="City" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false"/>
                   <button id="auto-location-periodic-btn" type="button" class="auto-location-btn" title="Auto-detect location">
-                    <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
+                    <span class="icon-mask icon-mask--map-pin" aria-hidden="true"></span>
                   </button>
                   <div id="periodic-city-dropdown" class="city-dropdown" role="listbox"></div>
                 </div>
@@ -94,7 +105,7 @@
                 <div class="city-input-wrapper">
                   <input id="progression-city-search" class="city-search-input" type="search" placeholder="City" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false"/>
                   <button id="auto-location-progression-btn" type="button" class="auto-location-btn" title="Auto-detect location">
-                    <img src="icons/map-pin.svg" alt="Auto-detect" width="18" height="18">
+                    <span class="icon-mask icon-mask--map-pin" aria-hidden="true"></span>
                   </button>
                   <div id="progression-city-dropdown" class="city-dropdown" role="listbox"></div>
                 </div>
@@ -136,25 +147,36 @@
 
         <!-- Right: Actions -->
         <div class="controls-right">
-          <button id="copy" type="button" class="icon-btn" title="Copy charts">
-            <img src="icons/copy.svg" alt="Copy" width="20" height="20">
+          <div class="btn-pair" aria-label="Chart export">
+            <button id="copy" type="button" class="icon-btn" title="Copy charts" aria-label="Copy charts">
+              <span class="icon-mask icon-mask--copy" aria-hidden="true"></span>
+            </button>
+            <button id="download" type="button" class="icon-btn" title="Download charts" aria-label="Download charts">
+              <span class="icon-mask icon-mask--download" aria-hidden="true"></span>
+            </button>
+          </div>
+          <button id="reset" type="button" class="btn btn--icon btn--danger icon-btn danger" title="Reset app" aria-label="Reset app">
+            <span class="icon-mask icon-mask--reset" aria-hidden="true"></span>
           </button>
-          <button id="download" type="button" class="icon-btn" title="Download charts">
-            <img src="icons/download.svg" alt="Download" width="20" height="20">
-          </button>
-          <button id="reset" type="button" class="icon-btn danger" title="Reset app">
-            <img src="icons/reset.svg" alt="Reset" width="20" height="20">
-          </button>
+          <div class="segmented segmented--icon" role="group" aria-label="Color theme" data-theme-switch>
+            <button class="segmented__btn" type="button" data-theme="light" aria-label="Light" title="Light">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.828 14.828a4 4 0 1 0 -5.656 -5.656a4 4 0 0 0 5.656 5.656z"/><path d="M6.343 17.657l-1.414 1.414M6.343 6.343l-1.414 -1.414M17.657 6.343l1.414 -1.414M17.657 17.657l1.414 1.414M12 20v2M12 2v2M20 12h2M2 12h2"/></svg>
+            </button>
+            <button class="segmented__btn" type="button" data-theme="auto" aria-label="Auto" title="Auto"><span>A</span></button>
+            <button class="segmented__btn" type="button" data-theme="dark" aria-label="Dark" title="Dark">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></svg>
+            </button>
+          </div>
         </div>
 
       </form>
     </header>
 
-    <div id="workspace">
+    <div id="workspace" class="workspace">
       <div id="workspace-stub" class="workspace-stub hidden"></div>
       <div id="rdm-container" class="rdm-container hidden"></div>
-      <section id="charts" aria-label="Forecast charts">
-        <div class="chart-card">
+      <section id="charts" class="stage" aria-label="Forecast charts">
+        <div class="chart-card solid">
           <header class="chart-header-split">
             <span>Temperature</span>
             <div class="temp-focus-btns">
@@ -165,7 +187,7 @@
           </header>
           <div id="chart-temp" class="chart" role="img" aria-label="Temperature chart"></div>
         </div>
-        <div class="chart-card">
+        <div class="chart-card solid">
           <header class="chart-header-tabs">
             <button class="tab-btn active" data-tab="hydro">Humidity · Precip</button>
             <button class="tab-btn" data-tab="sun">Sunshine</button>
@@ -174,19 +196,16 @@
           <div id="chart-hydro" class="chart" role="img" aria-label="Sub chart"></div>
         </div>
       </section>
-      <aside id="panel">
-        <section id="stats" aria-live="polite"></section>
+      <aside id="panel" class="inspector">
+        <section id="stats" class="stats" aria-live="polite"></section>
       </aside>
     </div>
 
-    <footer style="text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--text-muted);">
-      This is a pure vibe-coded app, <a href="about.html" style="color: var(--text-secondary); text-decoration: none; border-bottom: 1px dotted var(--text-muted);">read more here</a>
-    </footer>
   </main>
 
   <!-- Ko-fi Donation Widget -->
   <div id="kofi-floater" class="kofi-floater">
-    <img src="icons/coffee.svg" alt="Support" width="32" height="32">
+    <span class="icon-mask icon-mask--coffee" aria-hidden="true"></span>
   </div>
 
   <div id="kofi-panel" class="kofi-panel hidden">
@@ -194,7 +213,7 @@
   </div>
 
   <div id="kofi-close" class="kofi-floater hidden">
-    <img src="icons/circle-x.svg" alt="Close" width="32" height="32">
+    <span class="icon-mask icon-mask--circle-x" aria-hidden="true"></span>
   </div>
 
   <script>

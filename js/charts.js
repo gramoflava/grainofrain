@@ -40,15 +40,17 @@ export function setTempFocus(focus) {
 // --- Shared helpers ---
 
 function _themeVars() {
-  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const css = (name) => getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
   return {
-    isDark,
-    gridColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
-    axisLabelColor: isDark ? '#9E9E9E' : '#757575',
-    tooltipBg: isDark ? '#2a2a2a' : '#ffffff',
-    tooltipBorder: isDark ? '#404040' : '#e0e0e0',
-    tooltipText: isDark ? '#e0e0e0' : '#263238',
-    snowColor: isDark ? 'rgba(210,225,255,0.85)' : 'rgba(80,90,120,0.75)'
+    gridColor: css('--chart-grid'),
+    axisColor: css('--chart-axis'),
+    axisLabelColor: css('--chart-axis-label'),
+    tooltipBg: css('--tooltip-bg'),
+    tooltipBorder: css('--tooltip-line'),
+    tooltipText: css('--tooltip-text'),
+    snowColor: css('--chart-axis-label')
   };
 }
 
@@ -61,13 +63,14 @@ function _gridSizes() {
 }
 
 function _baseXAxis(x) {
+  const { axisColor, axisLabelColor } = _themeVars();
   return {
     type: 'category',
     data: x,
     boundaryGap: true,
-    axisLabel: { hideOverlap: true, color: '#546E7A', margin: 12 },
+    axisLabel: { hideOverlap: true, color: axisLabelColor, margin: 12 },
     axisTick: { show: false },
-    axisLine: { lineStyle: { color: '#CFD8DC' } }
+    axisLine: { lineStyle: { color: axisColor } }
   };
 }
 
@@ -157,7 +160,7 @@ function _monthMarkLines(x, gridColor) {
 // --- Temp chart renderer (single) ---
 
 function _renderTempChart(ch, series, color, prefs, label, asterisk) {
-  const { isDark, gridColor, axisLabelColor, tooltipBg, tooltipBorder, tooltipText } = _themeVars();
+  const { gridColor, axisLabelColor, tooltipBg, tooltipBorder, tooltipText } = _themeVars();
   const { left, right } = _gridSizes();
   const x = series.x;
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
@@ -224,7 +227,7 @@ function _renderTempChart(ch, series, color, prefs, label, asterisk) {
 // --- Temp chart renderer (compare) ---
 
 function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk) {
-  const { isDark, gridColor, axisLabelColor, tooltipBg, tooltipBorder, tooltipText } = _themeVars();
+  const { gridColor, axisLabelColor, tooltipBg, tooltipBorder, tooltipText } = _themeVars();
   const { left, right } = _gridSizes();
   const x = allSeries[0].x;
   const valueFmt = v => (typeof v === 'number' ? v.toFixed(1) : v);
@@ -314,7 +317,7 @@ function _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk)
 
 function _renderHydroChart(ch, allSeries, colors, prefs, labels, isCompare) {
   const tab = _activeTab;
-  const { isDark, gridColor, axisLabelColor, tooltipBg, tooltipBorder, tooltipText, snowColor } = _themeVars();
+  const { gridColor, axisLabelColor, tooltipBg, tooltipBorder, tooltipText, snowColor } = _themeVars();
   const { left, right } = _gridSizes();
   const x = allSeries[0].x;
   const grid = { left, right, top: 16, bottom: 4, containLabel: true };
@@ -613,4 +616,28 @@ export function renderCompare(ch, allSeries, colors, prefs = { showGrid: true, s
   _lastSingle = null;
   _renderTempChartCompare(ch, allSeries, colors, prefs, labels, asterisk);
   _renderHydroChart(ch, allSeries, colors, prefs, labels, true);
+}
+
+let _themeRenderFrame = 0;
+
+function _scheduleThemeRender() {
+  cancelAnimationFrame(_themeRenderFrame);
+  _themeRenderFrame = requestAnimationFrame(() => {
+    if (_lastSingle) {
+      const { ch, series, color, prefs, label } = _lastSingle;
+      renderAll(ch, series, color, prefs, label);
+    } else if (_lastCompare) {
+      const { ch, allSeries, colors, prefs, labels } = _lastCompare;
+      renderCompare(ch, allSeries, colors, prefs, labels);
+    }
+  });
+}
+
+document.addEventListener('themechange', _scheduleThemeRender);
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    let manualTheme = null;
+    try { manualTheme = localStorage.getItem('theme'); } catch (error) {}
+    if (!manualTheme) _scheduleThemeRender();
+  });
 }

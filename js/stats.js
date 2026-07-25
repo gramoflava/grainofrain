@@ -1,7 +1,5 @@
 import { escapeHtml, isFiniteNumber } from './utils.js';
 
-const COLOR_NAMES = ['blue', 'red', 'green'];
-
 function formatTemp(value) {
   return isFiniteNumber(value) ? `${value.toFixed(1)} °C` : 'n/a';
 }
@@ -51,13 +49,12 @@ function buildMetrics(smoothingActive) {
 }
 
 function renderMetricRows(metrics, statsArray) {
-  const numColumns = statsArray.length;
   let html = '';
   metrics.forEach(metric => {
-    html += `<div class="stats-row" style="grid-template-columns: auto repeat(${numColumns}, 1fr);">`;
-    html += `<div class="stats-label" title="${metric.tooltip}">${metric.label}</div>`;
+    html += '<div class="stats__row">';
+    html += `<div class="stats__label" title="${metric.tooltip}">${metric.label}</div>`;
     statsArray.forEach(stats => {
-      html += `<div class="stats-value">${metric.format(stats[metric.key])}</div>`;
+      html += `<div class="stats__value">${metric.format(stats[metric.key])}</div>`;
     });
     html += '</div>';
   });
@@ -69,21 +66,21 @@ export function fillStats(dom, statsArray, cityLabels, startDate, endDate, smoot
   const isComparison = numCities > 1;
   const smoothingActive = (smoothing || 0) > 0;
 
+  dom.style.setProperty('--stats-cols', numCities);
+
   let titleHtml = '';
   if (isComparison) {
-    titleHtml = `<div class="stats-title"><div class="stats-period">${startDate} – ${endDate}</div></div>`;
+    titleHtml = `<div class="stats__title"><span>${startDate} – ${endDate}</span></div>`;
   } else {
     const cityName = cityLabels[0] || 'City';
-    titleHtml = `<div class="stats-title"><div class="stats-city">${escapeHtml(cityName)}</div><div class="stats-period">${startDate} – ${endDate}</div></div>`;
+    titleHtml = `<div class="stats__title"><strong>${escapeHtml(cityName)}</strong><span>${startDate} – ${endDate}</span></div>`;
   }
 
   let headerHtml = '';
   if (isComparison) {
-    headerHtml = `<div class="stats-header-row" style="grid-template-columns: auto repeat(${numCities}, 1fr);">`;
-    headerHtml += `<div class="stats-label"></div>`;
+    headerHtml = '<div class="stats__head"><span></span>';
     cityLabels.forEach((label, i) => {
-      const colorClass = `color-${COLOR_NAMES[i]}`;
-      headerHtml += `<div class="stats-value"><span class="${colorClass}">${escapeHtml(label || `City ${i + 1}`)}</span></div>`;
+      headerHtml += `<span class="is-c${i + 1}">${escapeHtml(label || `City ${i + 1}`)}</span>`;
     });
     headerHtml += '</div>';
   }
@@ -91,26 +88,24 @@ export function fillStats(dom, statsArray, cityLabels, startDate, endDate, smoot
   const metrics = buildMetrics(smoothingActive);
   const tableHtml = renderMetricRows(metrics, statsArray);
 
-  const smoothingHint = smoothingActive ? '<div class="smoothing-hint">* Smoothing applied, turn off for exact data</div>' : '';
-  const headerSection = headerHtml ? `<div class="stats-header">${headerHtml}</div>` : '';
-  dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>${smoothingHint}`;
+  const smoothingHint = smoothingActive ? '<div class="stats__note">* Smoothing applied, turn off for exact data</div>' : '';
+  dom.innerHTML = `${titleHtml}${headerHtml}<div class="stats__body">${tableHtml}</div>${smoothingHint}`;
 }
 
 export function fillStatsPeriodic(dom, statsArray, yearLabels, cityName, periodStart, periodEnd, smoothing) {
   const numYears = statsArray.length;
   const isComparison = numYears > 1;
   const smoothingActive = (smoothing || 0) > 0;
+  dom.style.setProperty('--stats-cols', numYears);
 
   const periodDisplay = `${periodStart} – ${periodEnd}`;
-  let titleHtml = `<div class="stats-title"><div class="stats-city">${escapeHtml(cityName)}</div><div class="stats-period">${periodDisplay}</div></div>`;
+  const titleHtml = `<div class="stats__title"><strong>${escapeHtml(cityName)}</strong><span>${periodDisplay}</span></div>`;
 
   let headerHtml = '';
   if (isComparison) {
-    headerHtml = `<div class="stats-header-row" style="grid-template-columns: auto repeat(${numYears}, 1fr);">`;
-    headerHtml += `<div class="stats-label"></div>`;
+    headerHtml = '<div class="stats__head"><span></span>';
     yearLabels.forEach((label, i) => {
-      const colorClass = `color-${COLOR_NAMES[i]}`;
-      headerHtml += `<div class="stats-value"><span class="${colorClass}">${escapeHtml(label)}</span></div>`;
+      headerHtml += `<span class="is-c${i + 1}">${escapeHtml(label)}</span>`;
     });
     headerHtml += '</div>';
   }
@@ -118,22 +113,15 @@ export function fillStatsPeriodic(dom, statsArray, yearLabels, cityName, periodS
   const metrics = buildMetrics(smoothingActive);
   const tableHtml = renderMetricRows(metrics, statsArray);
 
-  const smoothingHint = smoothingActive ? '<div class="smoothing-hint">* Smoothing applied, turn off for exact data</div>' : '';
-  const headerSection = headerHtml ? `<div class="stats-header">${headerHtml}</div>` : '';
-  dom.innerHTML = `${titleHtml}${headerSection}<div class="stats-table">${tableHtml}</div>${smoothingHint}`;
+  const smoothingHint = smoothingActive ? '<div class="stats__note">* Smoothing applied, turn off for exact data</div>' : '';
+  dom.innerHTML = `${titleHtml}${headerHtml}<div class="stats__body">${tableHtml}</div>${smoothingHint}`;
 }
 
 export function fillStatsProgression(dom, stats, cityName, periodLabel, yearFrom, yearTo) {
-  const titleHtml = `<div class="stats-title"><div class="stats-city">${escapeHtml(cityName)}</div><div class="stats-period">${escapeHtml(periodLabel)} · ${yearFrom}–${yearTo}</div></div>`;
+  dom.style.setProperty('--stats-cols', 1);
+  const titleHtml = `<div class="stats__title"><strong>${escapeHtml(cityName)}</strong><span>${escapeHtml(periodLabel)} · ${yearFrom}–${yearTo}</span></div>`;
 
   const metrics = buildMetrics(false);
-  let tableHtml = '';
-  metrics.forEach(metric => {
-    tableHtml += `<div class="stats-row" style="grid-template-columns: auto 1fr;">`;
-    tableHtml += `<div class="stats-label" title="${metric.tooltip}">${metric.label}</div>`;
-    tableHtml += `<div class="stats-value">${metric.format(stats[metric.key])}</div>`;
-    tableHtml += '</div>';
-  });
-
-  dom.innerHTML = `${titleHtml}<div class="stats-table">${tableHtml}</div>`;
+  const tableHtml = renderMetricRows(metrics, [stats]);
+  dom.innerHTML = `${titleHtml}<div class="stats__body">${tableHtml}</div>`;
 }
