@@ -24,6 +24,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./gramofdesign/gramof.css" />
   <link rel="stylesheet" href="./styles.css?v=3" />
+  <script defer src="./gramofdesign/tools.js"></script>
   <script defer src="./gramofdesign/theme.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -150,25 +151,17 @@
         <!-- Right: Actions -->
         <div class="controls-right">
           <div class="btn-pair" aria-label="Chart export">
-            <button id="copy" type="button" class="icon-btn" title="Copy charts" aria-label="Copy charts">
+            <button id="copy" type="button" title="Copy charts" aria-label="Copy charts">
               <span class="icon-mask icon-mask--copy" aria-hidden="true"></span>
             </button>
-            <button id="download" type="button" class="icon-btn" title="Download charts" aria-label="Download charts">
+            <button id="download" type="button" title="Download charts" aria-label="Download charts">
               <span class="icon-mask icon-mask--download" aria-hidden="true"></span>
             </button>
           </div>
           <button id="reset" type="button" class="btn btn--icon btn--danger icon-btn danger" title="Reset app" aria-label="Reset app">
             <span class="icon-mask icon-mask--reset" aria-hidden="true"></span>
           </button>
-          <div class="segmented segmented--icon" role="group" aria-label="Color theme" data-theme-switch>
-            <button class="segmented__btn" type="button" data-theme="light" aria-label="Light" title="Light">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.828 14.828a4 4 0 1 0 -5.656 -5.656a4 4 0 0 0 5.656 5.656z"/><path d="M6.343 17.657l-1.414 1.414M6.343 6.343l-1.414 -1.414M17.657 6.343l1.414 -1.414M17.657 17.657l1.414 1.414M12 20v2M12 2v2M20 12h2M2 12h2"/></svg>
-            </button>
-            <button class="segmented__btn" type="button" data-theme="auto" aria-label="Auto" title="Auto"><span>A</span></button>
-            <button class="segmented__btn" type="button" data-theme="dark" aria-label="Dark" title="Dark">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></svg>
-            </button>
-          </div>
+          <div class="site-tools" data-site-tools></div>
         </div>
 
       </form>
@@ -205,35 +198,5 @@
 
   </main>
 
-  <!-- Ko-fi Donation Widget -->
-  <div id="kofi-floater" class="kofi-floater">
-    <span class="icon-mask icon-mask--coffee" aria-hidden="true"></span>
-  </div>
-
-  <div id="kofi-panel" class="kofi-panel hidden">
-    <iframe id='kofiframe' src='https://ko-fi.com/gramoflava/?hidefeed=true&widget=true&embed=true&preview=true' style='border:none;width:100%;padding:0;background:transparent;' height='660' title='gramoflava'></iframe>
-  </div>
-
-  <div id="kofi-close" class="kofi-floater hidden">
-    <span class="icon-mask icon-mask--circle-x" aria-hidden="true"></span>
-  </div>
-
-  <script>
-    const floater = document.getElementById('kofi-floater');
-    const panel = document.getElementById('kofi-panel');
-    const closeBtn = document.getElementById('kofi-close');
-
-    floater.addEventListener('click', () => {
-      floater.classList.add('hidden');
-      closeBtn.classList.remove('hidden');
-      panel.classList.remove('hidden');
-    });
-
-    closeBtn.addEventListener('click', () => {
-      panel.classList.add('hidden');
-      closeBtn.classList.add('hidden');
-      floater.classList.remove('hidden');
-    });
-  </script>
 </body>
 </html>

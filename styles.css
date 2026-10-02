@@ -806,7 +806,9 @@ input[type="date"]::-webkit-datetime-edit-text {
   font-family: 'Courier New', monospace;
 }
 
-#controls button {
+/* Toolbar buttons. Shared gramof components (site tools, the copy/download
+   pair) style themselves; an id selector here would outrank them. */
+#controls button:not(.site-tools *):not(.btn-pair *) {
   padding: 0;
   font-size: 0.8rem;
   border-radius: var(--radius-xs);
@@ -834,12 +836,12 @@ input[type="date"]::-webkit-datetime-edit-text {
   background: var(--accent-hover);
 }
 
-#controls button:not(.primary):not(.danger) {
+#controls button:not(.primary):not(.danger):not(.site-tools *):not(.btn-pair *) {
   background: transparent;
   color: var(--text-secondary);
 }
 
-#controls button:not(.primary):not(.danger):hover {
+#controls button:not(.primary):not(.danger):not(.site-tools *):not(.btn-pair *):hover {
   background: var(--surface-sunk);
 }
 
@@ -856,6 +858,11 @@ input[type="date"]::-webkit-datetime-edit-text {
   display: flex;
   gap: 0.2rem;
   align-items: center;
+}
+
+.btn-pair .icon-mask {
+  width: 16px;
+  height: 16px;
 }
 
 .btn-pair > button[hidden] {
@@ -1275,58 +1282,6 @@ input[type="date"]::-webkit-datetime-edit-text {
   border-color: var(--text);
 }
 
-/* Ko-fi Widget */
-.kofi-floater {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 56px;
-  height: 56px;
-  background: var(--surface);
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 9999;
-}
-
-.kofi-floater:hover {
-  transform: scale(1.1);
-  box-shadow: var(--shadow-hover);
-}
-
-.kofi-floater .icon-mask {
-  width: 32px;
-  height: 32px;
-}
-
-.kofi-floater.hidden {
-  display: none;
-}
-
-.kofi-panel {
-  position: fixed;
-  bottom: 52px;
-  right: 52px;
-  width: 400px;
-  height: 660px;
-  max-width: calc(100vw - 48px);
-  max-height: calc(100vh - 48px);
-  background: transparent;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  z-index: 9998;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.kofi-panel.hidden {
-  display: none;
-}
-
 /* ========================================
    Mobile Adaptation
    ======================================== */
@@ -1337,7 +1292,7 @@ input[type="date"]::-webkit-datetime-edit-text {
   #controls input,
   .city-search-input,
   .auto-location-btn,
-  #controls button,
+  #controls button:not(.site-tools *):not(.btn-pair *),
   #controls .primary {
     height: 44px;
     min-height: 44px;
@@ -1393,12 +1348,7 @@ input[type="date"]::-webkit-datetime-edit-text {
     filter: none;
   }
 
-  .kofi-floater:hover {
-    transform: none;
-    box-shadow: var(--shadow-md);
-  }
-
-  #controls button:not(.primary):not(.danger):hover {
+  #controls button:not(.primary):not(.danger):not(.site-tools *):not(.btn-pair *):hover {
     background: transparent;
   }
 }
