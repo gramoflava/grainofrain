@@ -331,7 +331,7 @@ main.container-fluid {
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
   font-weight: 500;
-  color: var(--text-on-accent);
+  color: var(--text-on-color);
   transition: all 0.15s ease;
   white-space: nowrap;
 }
@@ -359,14 +359,14 @@ main.container-fluid {
   width: 16px;
   height: 16px;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--text-on-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--text-on-color) 30%, transparent);
   cursor: pointer;
   font-size: 0.7rem;
   transition: background 0.15s ease;
 }
 
 .city-tag-remove:hover {
-  background: color-mix(in srgb, var(--text-on-accent) 50%, transparent);
+  background: color-mix(in srgb, var(--text-on-color) 50%, transparent);
 }
 
 .city-input-wrapper {
@@ -643,7 +643,7 @@ input[type="date"]::-webkit-datetime-edit-text {
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
   font-weight: 500;
-  color: var(--text-on-accent);
+  color: var(--text-on-color);
   transition: all 0.15s ease;
   white-space: nowrap;
 }
@@ -671,14 +671,14 @@ input[type="date"]::-webkit-datetime-edit-text {
   width: 16px;
   height: 16px;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--text-on-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--text-on-color) 30%, transparent);
   cursor: pointer;
   font-size: 0.7rem;
   transition: background 0.15s ease;
 }
 
 .year-tag-remove:hover {
-  background: color-mix(in srgb, var(--text-on-accent) 50%, transparent);
+  background: color-mix(in srgb, var(--text-on-color) 50%, transparent);
 }
 
 .year-input {
@@ -913,7 +913,7 @@ input[type="date"]::-webkit-datetime-edit-text {
   left: 50%;
   transform: translateX(-50%) translateY(100px);
   background: var(--tooltip-bg);
-  color: var(--text-on-accent);
+  color: var(--tooltip-text);
   padding: 1rem 1.5rem;
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-lg);
@@ -938,7 +938,7 @@ input[type="date"]::-webkit-datetime-edit-text {
 .toast-cancel {
   background: none;
   border: none;
-  color: color-mix(in srgb, var(--text-on-accent) 85%, transparent);
+  color: color-mix(in srgb, currentColor 85%, transparent);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -952,7 +952,7 @@ input[type="date"]::-webkit-datetime-edit-text {
 }
 
 .toast-cancel:hover {
-  color: var(--text-on-accent);
+  color: inherit;
 }
 
 .toast.visible {
@@ -962,10 +962,12 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 .toast.toast-success {
   background: var(--success);
+  color: var(--text-on-accent);
 }
 
 .toast.toast-error {
   background: var(--text-secondary);
+  color: var(--text-on-accent);
   max-width: 600px;
   text-align: left;
   font-weight: 400;
@@ -973,10 +975,12 @@ input[type="date"]::-webkit-datetime-edit-text {
 
 .toast.toast-info {
   background: var(--accent);
+  color: var(--text-on-accent);
 }
 
 .toast.toast-warning {
   background: var(--warn);
+  color: var(--text-on-accent);
 }
 
 #toast-rate-limit {
